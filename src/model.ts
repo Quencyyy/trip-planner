@@ -1,11 +1,49 @@
 // 資料格式與純函式（不碰 DOM，方便測試）
 
+export const ITEM_TYPES = ['spot', 'food', 'transport', 'flight', 'stay', 'other'] as const;
+export type ItemType = (typeof ITEM_TYPES)[number];
+export const TYPE_LABEL: Record<ItemType, string> = {
+  spot: '景點',
+  food: '吃飯',
+  transport: '交通',
+  flight: '航班',
+  stay: '住宿',
+  other: '其他',
+};
+export const TYPE_ICON: Record<ItemType, string> = {
+  spot: '🎡',
+  food: '🍜',
+  transport: '🚃',
+  flight: '✈️',
+  stay: '🏨',
+  other: '📌',
+};
+
+export type Booking = 'none' | 'todo' | 'done';
+export const BOOKING_LABEL: Record<Booking, string> = { none: '不需要', todo: '待訂', done: '已訂' };
+
 export interface Item {
   id: string;
+  type: ItemType;
   time: string; // "09:30"，可空白
+  endTime: string; // 結束時間，可空白
   title: string;
   place: string; // 地點文字，用來產生 Google 地圖連結
   note: string;
+  // 交通／航班
+  from: string;
+  to: string;
+  steps: string[]; // 一行一步，例如「南海電鐵 → 難波站」
+  ticket: string; // 怎麼買票
+  duration: string; // 手動填的時長，例如「6min」；空白就用起訖時間算
+  // 通用
+  cost: string; // 「約 230 円」
+  booking: Booking;
+  link: string; // 官網、訂位或地圖連結
+}
+
+export function blankItem(id = newId()): Item {
+  return { id, type: 'spot', time: '', endTime: '', title: '', place: '', note: '', from: '', to: '', steps: [], ticket: '', duration: '', cost: '', booking: 'none', link: '' };
 }
 
 export interface Day {
@@ -162,16 +200,108 @@ export function normalizeTrip(raw: unknown): Trip {
   const { days: fixed } = resizeDays(
     days.map((d) => ({
       date: String(d.date),
-      items: (Array.isArray(d.items) ? d.items : []).map((it) => ({
-        id: String(it.id ?? newId()),
-        time: String(it.time ?? ''),
-        title: String(it.title ?? ''),
-        place: String(it.place ?? ''),
-        note: String(it.note ?? ''),
-      })),
+      items: (Array.isArray(d.items) ? d.items : []).map(normalizeItem),
     })),
     startDate,
     endDate,
   );
   return { id: r.id, title: String(r.title ?? ''), startDate, endDate, days: fixed };
+}
+
+function normalizeItem(raw: unknown): Item {
+  const it = (raw ?? {}) as Partial<Record<keyof Item, unknown>>;
+  const str = (v: unknown) => (v == null ? '' : String(v));
+  const type = ITEM_TYPES.includes(it.type as ItemType) ? (it.type as ItemType) : 'spot';
+  const booking = (['none', 'todo', 'done'] as const).includes(it.booking as Booking) ? (it.booking as Booking) : 'none';
+  return {
+    id: str(it.id) || newId(),
+    type,
+    time: str(it.time),
+    endTime: str(it.endTime),
+    title: str(it.title),
+    place: str(it.place),
+    note: str(it.note),
+    from: str(it.from),
+    to: str(it.to),
+    steps: Array.isArray(it.steps) ? it.steps.map(str).filter(Boolean) : [],
+    ticket: str(it.ticket),
+    duration: str(it.duration),
+    cost: str(it.cost),
+    booking,
+    link: str(it.link),
+  };
+}
+
+/** 存檔前把空白的選填欄位拿掉，JSON 比較好讀 */
+export function compactItem(it: Item): Partial<Item> {
+  const out: Record<string, unknown> = { id: it.id, type: it.type };
+  for (const [k, v] of Object.entries(it)) {
+    if (k === 'id' || k === 'type') continue;
+    if (v === '' || v === 'none' || (Array.isArray(v) && v.length === 0)) continue;
+    out[k] = v;
+  }
+  return out as Partial<Item>;
+}
+
+export function compactTrip(t: Trip): unknown {
+  return { ...t, days: t.days.map((d) => ({ date: d.date, items: d.items.map(compactItem) })) };
+}
+
+function minutes(t: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(t);
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+
+/** 「1.5hr」「30min」；跨午夜也算得出來 */
+export function durationLabel(it: Pick<Item, 'time' | 'endTime' | 'duration'> & { type?: ItemType }): string {
+  if (it.duration) return it.duration;
+  // 航班起降時間是各地當地時間，有時差，不自動算
+  if (it.type === 'flight') return '';
+  const a = minutes(it.time);
+  const b = minutes(it.endTime);
+  if (a == null || b == null) return '';
+  let d = b - a;
+  if (d <= 0) d += 24 * 60;
+  if (d < 60) return `${d}min`;
+  const hr = Math.round((d / 60) * 10) / 10;
+  return `${hr}hr`;
+}
+
+export function directionsUrl(from: string, to: string): string {
+  return (
+    'https://www.google.com/maps/dir/?api=1&travelmode=transit&origin=' + encodeURIComponent(from) + '&destination=' + encodeURIComponent(to)
+  );
+}
+
+const isMove = (it: Item) => it.type === 'transport' || it.type === 'flight';
+
+/**
+ * 第 i 個項目前面要不要放「怎麼去」連結：
+ * 前後都不是交通項目、都有地點、而且地點不同。回傳 [起點, 終點] 或 null。
+ */
+export function routeBefore(items: Item[], i: number): [string, string] | null {
+  if (i <= 0) return null;
+  const a = items[i - 1];
+  const b = items[i];
+  if (isMove(a) || isMove(b)) return null;
+  if (!a.place.trim() || !b.place.trim() || a.place.trim() === b.place.trim()) return null;
+  return [a.place.trim(), b.place.trim()];
+}
+
+export interface BookingRow {
+  date: string;
+  item: Item;
+}
+
+/** 整趟旅程需要預約的項目，待訂在前 */
+export function bookingRows(t: Trip): { todo: BookingRow[]; done: BookingRow[] } {
+  const todo: BookingRow[] = [];
+  const done: BookingRow[] = [];
+  for (const d of t.days) {
+    for (const item of d.items) {
+      if (item.booking === 'todo') todo.push({ date: d.date, item });
+      else if (item.booking === 'done') done.push({ date: d.date, item });
+    }
+  }
+  return { todo, done };
 }

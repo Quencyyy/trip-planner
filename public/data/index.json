@@ -1,5 +1,10 @@
 {
   "trips": [
-    { "id": "example-kyoto", "title": "京都三日（範例）", "startDate": "2026-11-07", "endDate": "2026-11-09" }
+    {
+      "id": "2026-11-osaka",
+      "title": "大阪京都五日",
+      "startDate": "2026-11-25",
+      "endDate": "2026-11-29"
+    }
   ]
 }

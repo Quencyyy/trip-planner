@@ -1,0 +1,311 @@
+{
+  "id": "2026-11-osaka",
+  "title": "大阪京都五日",
+  "startDate": "2026-11-25",
+  "endDate": "2026-11-29",
+  "days": [
+    {
+      "date": "2026-11-25",
+      "items": [
+        {
+          "id": "i01",
+          "type": "flight",
+          "title": "台北桃園 → 關西機場",
+          "time": "06:05",
+          "endTime": "09:30",
+          "from": "桃園國際機場",
+          "to": "關西國際機場",
+          "duration": "2h25m",
+          "note": "日本比台灣快 1 小時，起降都是當地時間"
+        },
+        {
+          "id": "i02",
+          "type": "transport",
+          "title": "關西機場 → 心齋橋",
+          "time": "11:00",
+          "endTime": "12:00",
+          "from": "關西國際機場",
+          "to": "心齋橋站",
+          "steps": [
+            "關西機場搭「南海電鐵」",
+            "坐到「難波站」",
+            "轉地鐵御堂筋線",
+            "1 站到「心齋橋」"
+          ],
+          "cost": "大約 230 元"
+        },
+        {
+          "id": "i03",
+          "type": "stay",
+          "title": "飯店寄放行李",
+          "time": "12:00",
+          "place": "unito OSAKA Shinsaibashi West",
+          "note": "入住前先寄放行李"
+        },
+        {
+          "id": "i04",
+          "type": "food",
+          "title": "壽喜燒 SUKIYAKI FUJIMOTO",
+          "time": "12:30",
+          "endTime": "13:30",
+          "place": "SUKIYAKI FUJIMOTO 北堀江",
+          "link": "https://maps.app.goo.gl/R8se5rHEZpNJKsQu7"
+        },
+        {
+          "id": "i05",
+          "type": "spot",
+          "title": "心齋橋商店街",
+          "time": "13:40",
+          "endTime": "14:40",
+          "place": "心齋橋筋商店街"
+        },
+        {
+          "id": "i06",
+          "type": "transport",
+          "title": "前往道頓堀",
+          "time": "14:40",
+          "endTime": "14:50",
+          "from": "心齋橋筋商店街",
+          "to": "道頓堀",
+          "duration": "6min"
+        },
+        {
+          "id": "i07",
+          "type": "spot",
+          "title": "道頓堀逛街",
+          "time": "15:00",
+          "endTime": "16:20",
+          "place": "道頓堀"
+        },
+        {
+          "id": "i08",
+          "type": "transport",
+          "title": "道頓堀 → 黑門市場",
+          "time": "16:25",
+          "endTime": "16:35",
+          "from": "道頓堀",
+          "to": "黑門市場",
+          "duration": "9min"
+        },
+        {
+          "id": "i09",
+          "type": "spot",
+          "title": "黑門市場",
+          "time": "16:35",
+          "endTime": "17:10",
+          "place": "黑門市場"
+        },
+        {
+          "id": "i10",
+          "type": "spot",
+          "title": "回心齋橋商店街逛街",
+          "time": "17:10",
+          "place": "心齋橋筋商店街"
+        },
+        {
+          "id": "i11",
+          "type": "food",
+          "title": "鰻魚飯 うなぎの中庄 大阪アメリカ村店",
+          "time": "19:30",
+          "place": "うなぎの中庄 大阪アメリカ村店",
+          "booking": "done",
+          "note": "2 人，訂位已確認"
+        }
+      ]
+    },
+    {
+      "date": "2026-11-26",
+      "items": [
+        {
+          "id": "i12",
+          "type": "transport",
+          "title": "心齋橋 → 大阪城",
+          "time": "10:00",
+          "endTime": "10:30",
+          "from": "心齋橋站",
+          "to": "森之宮站",
+          "steps": [
+            "長堀鶴見綠地線 → 森之宮"
+          ]
+        },
+        {
+          "id": "i13",
+          "type": "spot",
+          "title": "大阪城公園",
+          "time": "10:30",
+          "endTime": "11:30",
+          "place": "大阪城公園"
+        },
+        {
+          "id": "i14",
+          "type": "spot",
+          "title": "梅田",
+          "time": "11:40",
+          "endTime": "12:10",
+          "place": "梅田站"
+        },
+        {
+          "id": "i15",
+          "type": "food",
+          "title": "午餐",
+          "time": "12:20",
+          "endTime": "13:30"
+        },
+        {
+          "id": "i16",
+          "type": "spot",
+          "title": "逛街",
+          "time": "13:30",
+          "endTime": "17:30"
+        },
+        {
+          "id": "i17",
+          "type": "spot",
+          "title": "梅田空中庭園",
+          "time": "17:30",
+          "endTime": "18:30",
+          "place": "梅田藍天大廈 空中庭園展望台"
+        },
+        {
+          "id": "i18",
+          "type": "food",
+          "title": "梅田或難波吃晚餐",
+          "time": "18:30",
+          "endTime": "19:30"
+        },
+        {
+          "id": "i19",
+          "type": "spot",
+          "title": "美國村逛街",
+          "time": "19:50",
+          "endTime": "21:00",
+          "place": "美國村 大阪",
+          "note": "過去約 7 分鐘"
+        }
+      ]
+    },
+    {
+      "date": "2026-11-27",
+      "items": [
+        {
+          "id": "i20",
+          "type": "transport",
+          "title": "心齋橋 → 京都清水寺",
+          "from": "心齋橋站",
+          "to": "清水寺",
+          "note": "路線待查"
+        },
+        {
+          "id": "i21",
+          "type": "spot",
+          "title": "清水寺、二年坂三年坂、石板路巷子、八坂塔",
+          "time": "10:50",
+          "endTime": "13:30",
+          "place": "清水寺"
+        },
+        {
+          "id": "i22",
+          "type": "food",
+          "title": "午餐",
+          "time": "13:30",
+          "endTime": "14:30"
+        },
+        {
+          "id": "i23",
+          "type": "spot",
+          "title": "祇園散步（花見小路、八坂神社）",
+          "time": "14:30",
+          "endTime": "16:00",
+          "place": "花見小路"
+        },
+        {
+          "id": "i24",
+          "type": "spot",
+          "title": "吃晚餐或伏見稻荷",
+          "time": "17:00",
+          "endTime": "18:10",
+          "place": "伏見稻荷大社",
+          "note": "二選一"
+        },
+        {
+          "id": "i25",
+          "type": "transport",
+          "title": "回大阪",
+          "from": "京都站",
+          "to": "心齋橋站"
+        }
+      ]
+    },
+    {
+      "date": "2026-11-28",
+      "items": [
+        {
+          "id": "i26",
+          "type": "transport",
+          "title": "心齋橋 → 環球影城",
+          "from": "心齋橋站",
+          "to": "ユニバーサルシティ駅",
+          "steps": [
+            "地鐵御堂筋線 → 梅田",
+            "JR 大阪站轉大阪環狀線 → 西九條",
+            "轉 JR 夢咲線 → Universal City"
+          ],
+          "note": "參考路線，出發前用地圖確認"
+        },
+        {
+          "id": "i27",
+          "type": "spot",
+          "title": "日本環球影城",
+          "place": "日本環球影城",
+          "booking": "todo",
+          "note": "門票、快速通關要先買"
+        }
+      ]
+    },
+    {
+      "date": "2026-11-29",
+      "items": [
+        {
+          "id": "i28",
+          "type": "stay",
+          "title": "退房、寄放行李",
+          "place": "unito OSAKA Shinsaibashi West"
+        },
+        {
+          "id": "i29",
+          "type": "spot",
+          "title": "黑門市場（還在考慮）",
+          "place": "黑門市場"
+        },
+        {
+          "id": "i30",
+          "type": "stay",
+          "title": "回飯店拿行李",
+          "place": "unito OSAKA Shinsaibashi West"
+        },
+        {
+          "id": "i31",
+          "type": "transport",
+          "title": "心齋橋 → 關西機場",
+          "from": "心齋橋站",
+          "to": "關西國際機場 第1航廈",
+          "steps": [
+            "地鐵御堂筋線 → 難波",
+            "南海電鐵 → 關西機場"
+          ],
+          "note": "20:55 起飛，建議 18:55 前到機場"
+        },
+        {
+          "id": "i32",
+          "type": "flight",
+          "title": "關西機場 T1 → 台北桃園",
+          "time": "20:55",
+          "endTime": "23:15",
+          "from": "關西國際機場 第1航廈",
+          "to": "桃園國際機場",
+          "duration": "3h20m"
+        }
+      ]
+    }
+  ]
+}

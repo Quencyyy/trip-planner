@@ -5,12 +5,17 @@ import { INDEX_PATH, fetchIndex, fetchTrip, tripPath } from './data';
 import { h, mount, toast } from './dom';
 import { GitHubError, checkAccess, clearToken, deleteFile, getFile, isReady, loadSettings, putFile, saveSettings, type RepoSettings } from './github';
 import {
+  BOOKING_LABEL,
+  ITEM_TYPES,
+  TYPE_ICON,
+  TYPE_LABEL,
+  blankItem,
+  compactTrip,
   dateRange,
   formatDay,
   formatRange,
   isDate,
   isValidId,
-  newId,
   normalizeTrip,
   removeFromIndex,
   resizeDays,
@@ -18,7 +23,9 @@ import {
   sortByTime,
   summarize,
   upsertIndex,
+  type Booking,
   type Item,
+  type ItemType,
   type Trip,
   type TripIndex,
 } from './model';
@@ -239,9 +246,12 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
 
   function itemEditor(it: Item): HTMLElement {
     const open = openIds.has(it.id);
+    const isMove = (t: ItemType) => t === 'transport' || t === 'flight';
+    const sumIcon = h('span', { class: 'sum-icon' }, TYPE_ICON[it.type]);
     const sumTime = h('span', { class: 'item-time' }, it.time);
     const sumTitle = h('span', { class: 'item-title' }, it.title || '（未命名）');
-    const field = <K extends 'time' | 'title' | 'place' | 'note'>(k: K, el: HTMLInputElement | HTMLTextAreaElement) => {
+    type TextKey = 'time' | 'endTime' | 'title' | 'place' | 'note' | 'from' | 'to' | 'ticket' | 'duration' | 'cost' | 'link';
+    const field = (k: TextKey, el: HTMLInputElement | HTMLTextAreaElement) => {
       el.value = it[k];
       el.addEventListener('input', () => {
         it[k] = el.value;
@@ -251,9 +261,45 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
       });
       return el;
     };
+    const stepsIn = h('textarea', { rows: 3, placeholder: '一行一步，例如：\n南海電鐵 → 難波站\n轉御堂筋線 → 心齋橋' });
+    stepsIn.value = it.steps.join('\n');
+    stepsIn.addEventListener('input', () => {
+      it.steps = stepsIn.value.split('\n').map((x) => x.trim()).filter(Boolean);
+      markDirty();
+    });
+    const bookingIn = h(
+      'select',
+      {},
+      (Object.keys(BOOKING_LABEL) as Booking[]).map((k) => h('option', { value: k }, BOOKING_LABEL[k])),
+    );
+    bookingIn.value = it.booking;
+    bookingIn.addEventListener('change', () => {
+      it.booking = bookingIn.value as Booking;
+      markDirty();
+    });
+
+    const typeBtns = ITEM_TYPES.map((t) =>
+      h(
+        'button',
+        {
+          type: 'button',
+          class: `type-btn${t === it.type ? ' on' : ''}`,
+          'data-type': t,
+          onclick: () => {
+            it.type = t;
+            sumIcon.textContent = TYPE_ICON[t];
+            for (const b of typeBtns) b.classList.toggle('on', b.dataset.type === t);
+            li.classList.toggle('move', isMove(t));
+            markDirty();
+          },
+        },
+        `${TYPE_ICON[t]} ${TYPE_LABEL[t]}`,
+      ),
+    );
+
     const li = h(
       'li',
-      { class: `edit-item${open ? ' open' : ''}`, 'data-id': it.id },
+      { class: `edit-item${open ? ' open' : ''}${isMove(it.type) ? ' move' : ''}`, 'data-id': it.id },
       h(
         'div',
         { class: 'edit-sum' },
@@ -269,6 +315,7 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
               li.classList.toggle('open');
             },
           },
+          sumIcon,
           sumTime,
           sumTitle,
         ),
@@ -276,14 +323,36 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
       h(
         'div',
         { class: 'edit-fields' },
+        h('div', { class: 'type-row' }, typeBtns),
         h(
           'div',
           { class: 'row' },
-          h('label', { class: 'narrow' }, '時間', field('time', h('input', { type: 'time' }))),
-          h('label', {}, '標題', field('title', h('input', { placeholder: '要做什麼' }))),
+          h('label', {}, '開始', field('time', h('input', { type: 'time' }))),
+          h('label', {}, '結束', field('endTime', h('input', { type: 'time' }))),
         ),
-        h('label', {}, '地點', field('place', h('input', { placeholder: '會變成 Google 地圖連結' }))),
-        h('label', {}, '備註', field('note', h('textarea', { rows: 2 }))),
+        h('label', {}, '標題', field('title', h('input', { placeholder: '要做什麼' }))),
+        h(
+          'div',
+          { class: 'row only-move' },
+          h('label', {}, '從', field('from', h('input', { placeholder: '出發地' }))),
+          h('label', {}, '到', field('to', h('input', { placeholder: '目的地' }))),
+        ),
+        h('label', { class: 'only-move' }, '路線步驟', stepsIn),
+        h(
+          'div',
+          { class: 'row only-move' },
+          h('label', {}, '怎麼買票', field('ticket', h('input', { placeholder: '刷 IC 卡、現場買…' }))),
+          h('label', { class: 'narrow' }, '時長', field('duration', h('input', { placeholder: '6min' }))),
+        ),
+        h('label', { class: 'only-place' }, '地點', field('place', h('input', { placeholder: '會變成 Google 地圖連結' }))),
+        h(
+          'div',
+          { class: 'row' },
+          h('label', {}, '費用', field('cost', h('input', { placeholder: '約 230 元' }))),
+          h('label', {}, '預約', bookingIn),
+        ),
+        h('label', {}, '連結', field('link', h('input', { type: 'url', placeholder: '官網、訂位或地圖網址' }))),
+        h('label', {}, '備註', field('note', h('textarea', { rows: 2, placeholder: '不要寫訂位代號、護照號碼' }))),
         h(
           'button',
           {
@@ -326,7 +395,7 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
         );
         return h(
           'section',
-          { class: 'day' },
+          { class: `day c${i % 5}` },
           h(
             'h2',
             { class: 'day-head' },
@@ -355,7 +424,7 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
               type: 'button',
               class: 'add',
               onclick: () => {
-                const it: Item = { id: newId(), time: '', title: '', place: '', note: '' };
+                const it: Item = blankItem();
                 day.items.push(it);
                 openIds.add(it.id);
                 renderDays();
@@ -408,7 +477,7 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
     saving = true;
     refreshSave();
     try {
-      const json = JSON.stringify(trip, null, 2) + '\n';
+      const json = JSON.stringify(compactTrip(trip), null, 2) + '\n';
       sha = await putFile(s, tripPath(trip.id), json, sha, `${isNew ? '新增' : '更新'}行程：${trip.title}`);
       isNew = false;
       const { index, sha: idxSha } = await loadIndex(s);

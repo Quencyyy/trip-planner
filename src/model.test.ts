@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  blankItem,
+  bookingRows,
+  compactItem,
+  durationLabel,
+  routeBefore,
+  type Item,
   base64ToUtf8,
   dateRange,
   formatDay,
@@ -14,7 +20,7 @@ import {
   utf8ToBase64,
 } from './model';
 
-const item = (id: string, time = '') => ({ id, time, title: id, place: '', note: '' });
+const item = (id: string, time = '', extra: Partial<Item> = {}): Item => ({ ...blankItem(id), title: id, time, ...extra });
 
 describe('日期', () => {
   it('isDate 擋掉不存在的日期', () => {
@@ -79,5 +85,51 @@ describe('其他', () => {
     expect(t.days.length).toBe(2);
     expect(t.days[1].items[0]).toMatchObject({ title: 'hi', time: '', place: '', note: '' });
     expect(() => normalizeTrip(null)).toThrow();
+  });
+});
+
+describe('交通與預約', () => {
+  it('durationLabel：手動優先、跨午夜、小時一位小數', () => {
+    expect(durationLabel({ time: '13:10', endTime: '14:40', duration: '' })).toBe('1.5hr');
+    expect(durationLabel({ time: '14:40', endTime: '14:50', duration: '' })).toBe('10min');
+    expect(durationLabel({ time: '14:40', endTime: '14:50', duration: '6min' })).toBe('6min');
+    expect(durationLabel({ time: '23:30', endTime: '00:30', duration: '' })).toBe('1hr');
+    expect(durationLabel({ time: '10:00', endTime: '', duration: '' })).toBe('');
+  });
+  it('routeBefore：只在兩個有地點、非交通、地點不同的項目之間', () => {
+    const items = [
+      item('a', '', { place: '道頓堀' }),
+      item('b', '', { place: '黑門市場' }),
+      item('c', '', { place: '黑門市場' }),
+      item('d', '', { type: 'transport', from: 'x', to: 'y' }),
+      item('e', '', { place: '梅田' }),
+      item('f'),
+    ];
+    expect(routeBefore(items, 0)).toBeNull();
+    expect(routeBefore(items, 1)).toEqual(['道頓堀', '黑門市場']);
+    expect(routeBefore(items, 2)).toBeNull();
+    expect(routeBefore(items, 3)).toBeNull();
+    expect(routeBefore(items, 4)).toBeNull();
+    expect(routeBefore(items, 5)).toBeNull();
+  });
+  it('bookingRows 分待訂／已訂', () => {
+    const t = { id: 't', title: '', startDate: '2026-01-01', endDate: '2026-01-01', days: [{ date: '2026-01-01', items: [item('a', '', { booking: 'todo' }), item('b', '', { booking: 'done' }), item('c')] }] };
+    const r = bookingRows(t);
+    expect(r.todo.map((x) => x.item.id)).toEqual(['a']);
+    expect(r.done.map((x) => x.item.id)).toEqual(['b']);
+  });
+  it('compactItem 拿掉空欄位，normalizeTrip 能讀回來', () => {
+    const it0 = item('a', '10:00', { type: 'transport', steps: ['南海電鐵'] });
+    const c = compactItem(it0);
+    expect(c).toEqual({ id: 'a', type: 'transport', time: '10:00', title: 'a', steps: ['南海電鐵'] });
+    const back = normalizeTrip({ id: 't', title: '', startDate: '2026-01-01', endDate: '2026-01-01', days: [{ date: '2026-01-01', items: [c] }] });
+    expect(back.days[0].items[0]).toEqual(it0);
+  });
+});
+
+describe('航班時長', () => {
+  it('航班不自動算（有時差），手動填的照用', () => {
+    expect(durationLabel({ type: 'flight', time: '06:05', endTime: '09:30', duration: '' })).toBe('');
+    expect(durationLabel({ type: 'flight', time: '06:05', endTime: '09:30', duration: '2h25m' })).toBe('2h25m');
   });
 });

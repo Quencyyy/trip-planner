@@ -10,7 +10,7 @@ async function route(): Promise<void> {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
   window.scrollTo(0, 0);
   try {
-    if (parts[0] === 't' && parts[1]) await renderTrip(root, parts[1], parts[2] === 'today');
+    if (parts[0] === 't' && parts[1]) await renderTrip(root, parts[1], parts[2] === 'today' ? 'today' : parts[2] === 'book' ? 'book' : 'all');
     else if (parts[0] === 'edit' && parts[1]) await renderEditor(root, parts[1]);
     else if (parts[0] === 'edit') await renderEditHome(root);
     else if (parts[0] === 'settings') renderSettings(root);

@@ -1,0 +1,14 @@
+{
+  "name": "旅遊計劃",
+  "short_name": "旅遊計劃",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f3ee",
+  "theme_color": "#2f7d6d",
+  "lang": "zh-Hant",
+  "icons": [
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

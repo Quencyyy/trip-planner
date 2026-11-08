@@ -1,0 +1,5 @@
+{
+  "trips": [
+    { "id": "example-kyoto", "title": "京都三日（範例）", "startDate": "2026-11-07", "endDate": "2026-11-09" }
+  ]
+}

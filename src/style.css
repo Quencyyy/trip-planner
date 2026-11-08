@@ -246,3 +246,5 @@ button.link { border: 0; background: none; color: var(--accent); padding: 2px 4p
   .foot, .tabs, .back { display: none; }
   .day { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
 }
+.banner-err { background: color-mix(in srgb, var(--danger) 16%, var(--card)); }
+.banner a { font-weight: 600; }

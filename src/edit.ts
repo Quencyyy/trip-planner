@@ -3,7 +3,7 @@
 import Sortable from 'sortablejs';
 import { INDEX_PATH, fetchIndex, fetchTrip, tripPath } from './data';
 import { h, mount, toast } from './dom';
-import { checkAccess, clearToken, deleteFile, getFile, isReady, loadSettings, putFile, saveSettings, type RepoSettings } from './github';
+import { GitHubError, checkAccess, clearToken, deleteFile, getFile, isReady, loadSettings, putFile, saveSettings, type RepoSettings } from './github';
 import {
   dateRange,
   formatDay,
@@ -61,7 +61,16 @@ function notReadyBanner(): HTMLElement {
 export async function renderEditHome(root: HTMLElement): Promise<void> {
   document.title = '編輯｜旅遊計劃';
   const s = loadSettings();
-  const { index } = await loadIndex(s);
+  let index: TripIndex;
+  let tokenProblem = '';
+  try {
+    ({ index } = await loadIndex(s));
+  } catch (e) {
+    // 權杖壞掉時仍要能進到設定頁，所以改讀網站上的資料
+    if (!(e instanceof GitHubError)) throw e;
+    tokenProblem = e.message;
+    index = await fetchIndex();
+  }
 
   const idIn = h('input', { name: 'id', required: true, placeholder: '例如 2026-12-tokyo', pattern: '[a-z0-9][a-z0-9\\-]*', autocapitalize: 'off' });
   const titleIn = h('input', { name: 'title', required: true, placeholder: '例如 東京五天' });
@@ -102,7 +111,11 @@ export async function renderEditHome(root: HTMLElement): Promise<void> {
 
   mount(root,
     h('header', { class: 'top' }, h('a', { class: 'back', href: '#/', 'aria-label': '回到列表' }, '‹'), h('div', { class: 'top-text' }, h('h1', {}, '編輯'))),
-    isReady(s) ? null : notReadyBanner(),
+    tokenProblem
+      ? h('div', { class: 'banner banner-err' }, tokenProblem + '。', h('a', { href: '#/settings' }, '前往設定'))
+      : isReady(s)
+        ? null
+        : notReadyBanner(),
     h(
       'ul',
       { class: 'trip-list' },

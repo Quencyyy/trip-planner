@@ -19,6 +19,7 @@ async function route(): Promise<void> {
     mount(root,
       h('header', { class: 'top' }, h('a', { class: 'back', href: '#/' }, '‹'), h('div', { class: 'top-text' }, h('h1', {}, '讀取失敗'))),
       h('p', { class: 'empty' }, e instanceof Error ? e.message : String(e)),
+      h('footer', { class: 'foot' }, h('a', { href: '#/' }, '回到列表'), '　', h('a', { href: '#/settings' }, '設定')),
     );
   }
 }

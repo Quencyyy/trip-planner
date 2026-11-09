@@ -225,9 +225,9 @@ function moneyView(trip: Trip): HTMLElement {
   );
 }
 
-export type TripTab = 'all' | 'today' | 'book' | 'money';
+export type TripTab = 'day' | 'book' | 'money';
 
-export async function renderTrip(root: HTMLElement, id: string, tab: TripTab): Promise<void> {
+export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wantDate = ''): Promise<void> {
   const s = loadSettings();
   let canEdit = isReady(s);
   let tokenProblem = '';
@@ -250,6 +250,17 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab): P
   document.title = `${trip.title}｜旅遊計劃`;
   const today = localToday();
   const inTrip = trip.startDate <= today && today <= trip.endDate;
+  // 只顯示一天：網址指定的那天 → 旅行中就今天 → 還沒出發或已結束就第一天
+  const has = (d: string) => trip.days.some((x) => x.date === d);
+  let selDate = has(wantDate) ? wantDate : inTrip && has(today) ? today : (trip.days[0]?.date ?? '');
+  const pickDay = (d: string) => {
+    selDate = d;
+    openKey = '';
+    // 換天不重新讀資料，只更新網址（可分享、重新整理後停在同一天）
+    history.replaceState(null, '', `#/t/${encodeURIComponent(id)}/day/${d}`);
+    draw();
+    window.scrollTo(0, 0);
+  };
 
   let openKey = ''; // 正在記帳的位置
   let busy = false;
@@ -338,11 +349,32 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab): P
     if (tab === 'book') body = bookingView(trip);
     else if (tab === 'money') body = moneyView(trip);
     else {
-      const days = tab === 'today' ? trip.days.filter((d) => d.date === today) : trip.days;
+      const i = trip.days.findIndex((d) => d.date === selDate);
       body =
-        tab === 'today' && days.length === 0
-          ? h('p', { class: 'empty' }, '今天不在這趟旅程的日期內。')
-          : h('div', { class: 'days' }, days.map((d) => dayView(d, trip.days.indexOf(d) + 1, today, spentFor)));
+        i < 0
+          ? h('p', { class: 'empty' }, '這趟行程還沒有日期。')
+          : h(
+              'div',
+              { class: 'days' },
+              h(
+                'nav',
+                { class: 'day-strip', 'aria-label': '選擇日期' },
+                trip.days.map((d, n) =>
+                  h(
+                    'button',
+                    {
+                      type: 'button',
+                      class: `day-pick c${n % 5}${d.date === selDate ? ' on' : ''}${d.date === today ? ' is-today' : ''}`,
+                      'aria-current': d.date === selDate ? 'date' : null,
+                      onclick: () => pickDay(d.date),
+                    },
+                    h('span', { class: 'pick-n' }, d.date === today ? '今天' : `Day ${n + 1}`),
+                    h('span', { class: 'pick-date' }, `${Number(d.date.slice(5, 7))}/${Number(d.date.slice(8))}`),
+                  ),
+                ),
+              ),
+              dayView(trip.days[i], i + 1, today, spentFor),
+            );
     }
     const total = tripTotal(trip);
 
@@ -358,8 +390,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab): P
       h(
         'nav',
         { class: 'tabs' },
-        h('a', { href: `#/t/${id}`, class: tab === 'all' ? 'on' : '' }, '全部'),
-        inTrip ? h('a', { href: `#/t/${id}/today`, class: tab === 'today' ? 'on' : '' }, '今天') : null,
+        h('a', { href: `#/t/${id}/day/${selDate}`, class: tab === 'day' ? 'on' : '' }, '行程'),
         h('a', { href: `#/t/${id}/book`, class: tab === 'book' ? 'on' : '' }, '預約', todoCount ? h('span', { class: 'dot' }, String(todoCount)) : null),
         h('a', { href: `#/t/${id}/money`, class: tab === 'money' ? 'on' : '' }, '記帳', total ? h('span', { class: 'dot money' }, formatYen(total)) : null),
       ),
@@ -377,7 +408,4 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab): P
   }
 
   draw();
-  if (tab === 'all' && inTrip) {
-    requestAnimationFrame(() => document.getElementById(`d-${today}`)?.scrollIntoView({ block: 'start' }));
-  }
 }

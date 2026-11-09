@@ -3,7 +3,8 @@ import { h, mount } from './dom';
 import { clearDirty, isDirty, renderEditHome, renderEditor, renderSettings } from './edit';
 import { renderHome, renderTrip, type TripTab } from './view';
 
-const tabOf = (p?: string): TripTab => (p === 'today' || p === 'book' || p === 'money' ? p : 'all');
+// 舊網址 #/t/<id>/today 也會落到「預設顯示今天」
+const tabOf = (p?: string): TripTab => (p === 'book' || p === 'money' ? p : 'day');
 
 const app = document.getElementById('app')!;
 let current = location.hash;
@@ -20,7 +21,7 @@ async function route(): Promise<void> {
     if (my === seq) app.replaceChildren(root);
   };
   try {
-    if (parts[0] === 't' && parts[1]) await renderTrip(root, parts[1], tabOf(parts[2]));
+    if (parts[0] === 't' && parts[1]) await renderTrip(root, parts[1], tabOf(parts[2]), parts[2] === 'day' ? (parts[3] ?? '') : '');
     else if (parts[0] === 'edit' && parts[1]) await renderEditor(root, parts[1]);
     else if (parts[0] === 'edit') await renderEditHome(root);
     else if (parts[0] === 'settings') renderSettings(root);

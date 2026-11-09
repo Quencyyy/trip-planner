@@ -426,6 +426,43 @@ button.link { border: 0; background: none; color: var(--link); padding: 2px 4px;
 .toast-err { background: var(--danger); color: #fff; }
 .toast-hide { opacity: 0; }
 
+/* 日期標籤：一次看一天 */
+.day-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(58px, 1fr);
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 4px 6px 2px;
+  margin: 0 -4px -6px 0;
+  scrollbar-width: none;
+}
+.day-strip::-webkit-scrollbar { display: none; }
+.day-pick {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.25;
+  padding: 5px 4px;
+  border-radius: 16px;
+  border: 2.5px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  white-space: nowrap;
+}
+.day-pick .pick-n { font-size: 0.9rem; }
+.day-pick .pick-date { font-size: 0.72rem; color: var(--muted); }
+.day-pick.on { background: var(--day); box-shadow: var(--sticker-sm); }
+.day-pick.on .pick-date { color: var(--text); }
+.day-pick.c1 { --day: var(--c1); }
+.day-pick.c2 { --day: var(--c2); }
+.day-pick.c3 { --day: var(--c3); }
+.day-pick.c4 { --day: var(--c4); }
+.day-pick.c0 { --day: var(--c0); }
+.day-pick.is-today .pick-n { color: var(--accent); }
+.day-pick.is-today.on .pick-n { color: var(--text); }
+
 /* 記帳 */
 .dot.money { background: #4fa875; font-variant-numeric: tabular-nums; }
 .day-total {

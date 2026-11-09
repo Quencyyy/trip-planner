@@ -25,7 +25,7 @@
       "items": [
         { "id": "yen", "text": "換一些日圓現金", "hint": "小店、寺廟、扭蛋常常只收現金" },
         { "id": "card", "text": "信用卡開啟海外刷卡，帶兩張不同的卡" },
-        { "id": "ic", "text": "iPhone 錢包加 ICOCA／Suica，先試儲值", "hint": "有些卡別不能儲值，出發前先試；不行就到日本車站買實體卡" }
+        { "id": "ic", "text": "iPhone 錢包新增 Suica，先試儲值最小金額", "hint": "台灣發行的 Visa 卡多半不能儲值，改用 Mastercard 或 JCB；都不行就到日本便利商店櫃台或車站付現金儲值。關西也能刷 Suica" }
       ]
     },
     {

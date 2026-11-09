@@ -63,17 +63,26 @@ function apiUrl(s: RepoSettings, path: string): string {
   return `https://api.github.com/repos/${encodeURIComponent(s.owner)}/${encodeURIComponent(s.repo)}/contents/${p}`;
 }
 
+/** 連不上網路（不是 GitHub 拒絕） */
+export class NetworkError extends Error {}
+
 async function call(s: RepoSettings, url: string, init: RequestInit = {}): Promise<Response> {
-  const res = await fetch(url, {
-    ...init,
-    cache: 'no-store',
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${s.token}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
-    },
-  });
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new NetworkError('沒有網路，這次沒有存到');
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...init,
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${s.token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+      },
+    });
+  } catch {
+    throw new NetworkError('連不上網路，這次沒有存到');
+  }
   if (res.ok || res.status === 404) return res;
   let msg = `GitHub 回應 ${res.status}`;
   if (res.status === 401) msg = '權杖無效或已過期，請到「設定」重新貼上';

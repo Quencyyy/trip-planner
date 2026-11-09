@@ -54,3 +54,12 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 void route();
+
+// 離線也能打開（只在正式網站啟用，開發時不快取）
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      /* 不支援或被擋就算了，網站照常運作 */
+    });
+  });
+}

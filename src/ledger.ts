@@ -3,7 +3,7 @@
 
 import { tripPath } from './data';
 import { GitHubError, getFile, putFile, type RepoSettings } from './github';
-import { compactTrip, expenseList, newId, normalizeTrip, type Expense, type Trip } from './model';
+import { compactTrip, expenseList, newId, normalizeTrip, type Expense, type Pay, type Trip } from './model';
 
 export interface Target {
   date: string;
@@ -39,8 +39,8 @@ function listOrThrow(t: Trip, where: Target): Expense[] {
   return list;
 }
 
-export function addExpense(s: RepoSettings, tripId: string, where: Target, amount: number, note: string): Promise<Trip> {
-  return update(s, tripId, (t) => listOrThrow(t, where).push({ id: newId(), amount, note }), `記帳：${where.date} ¥${amount}${note ? ' ' + note : ''}`);
+export function addExpense(s: RepoSettings, tripId: string, where: Target, amount: number, note: string, pay: Pay): Promise<Trip> {
+  return update(s, tripId, (t) => listOrThrow(t, where).push({ id: newId(), amount, note, pay }), `記帳：${where.date} ¥${amount}${note ? ' ' + note : ''}`);
 }
 
 export function removeExpense(s: RepoSettings, tripId: string, where: Target, expenseId: string): Promise<Trip> {

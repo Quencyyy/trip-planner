@@ -3,6 +3,8 @@
 import Sortable from 'sortablejs';
 import { INDEX_PATH, fetchIndex, fetchTrip, tripPath } from './data';
 import { h, mount, toast } from './dom';
+import { loadLatest } from './ledger';
+import { liveRate } from './rate';
 import { GitHubError, checkAccess, clearToken, deleteFile, getFile, isReady, loadSettings, putFile, saveSettings, type RepoSettings } from './github';
 import {
   BOOKING_LABEL,
@@ -17,6 +19,7 @@ import {
   formatYen,
   isDate,
   isValidId,
+  mergeSpent,
   normalizeTrip,
   removeFromIndex,
   resizeDays,
@@ -25,6 +28,7 @@ import {
   sumExpenses,
   summarize,
   upsertIndex,
+  withoutSpent,
   type Booking,
   type Item,
   type ItemType,
@@ -107,6 +111,7 @@ export async function renderEditHome(root: HTMLElement): Promise<void> {
           startDate: startIn.value,
           endDate: endIn.value,
           days: dateRange(startIn.value, endIn.value).map((date) => ({ date, items: [], spent: [] })),
+          twdRate: 0,
           guide: '',
         };
         location.hash = `#/edit/${id}`;
@@ -218,6 +223,8 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
     dirty = false;
   }
   document.title = `編輯 ${trip.title}｜旅遊計劃`;
+  // 載入時的行程（不含記帳），存檔衝突時用來判斷別人改的是不是只有記帳
+  let base = JSON.stringify(withoutSpent(trip));
 
   const items = new Map<string, Item>();
   const openIds = new Set<string>();
@@ -472,14 +479,43 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
   startIn.addEventListener('change', onDates);
   endIn.addEventListener('change', onDates);
 
+  const rateIn = h('input', { type: 'number', step: '0.0001', min: '0', inputmode: 'decimal', placeholder: '例如 0.2071', value: trip.twdRate ? String(trip.twdRate) : '' });
+  rateIn.addEventListener('input', () => {
+    const v = Number(rateIn.value);
+    trip.twdRate = rateIn.value === '' ? 0 : v > 0 && v < 10 ? v : trip.twdRate;
+    markDirty();
+  });
+  async function fillRate(): Promise<void> {
+    const r = await liveRate(true);
+    if (!r) return toast('抓不到匯率，請自己填', 'err');
+    trip.twdRate = Math.round(r.rate * 10000) / 10000;
+    rateIn.value = String(trip.twdRate);
+    markDirty();
+    toast(`今天匯率約 ${trip.twdRate}`);
+  }
+
   async function save(): Promise<void> {
     if (!ready || saving || !dirty) return;
     if (!trip.title.trim()) return toast('請填名稱', 'err');
     saving = true;
     refreshSave();
     try {
-      const json = JSON.stringify(compactTrip(trip), null, 2) + '\n';
-      sha = await putFile(s, tripPath(trip.id), json, sha, `${isNew ? '新增' : '更新'}行程：${trip.title}`);
+      const message = `${isNew ? '新增' : '更新'}行程：${trip.title}`;
+      try {
+        sha = await putFile(s, tripPath(trip.id), JSON.stringify(compactTrip(trip), null, 2) + '\n', sha, message);
+      } catch (e) {
+        // 別台裝置在這段時間記了帳：記帳用最新的，行程用這頁的，再存一次
+        if (isNew || !(e instanceof GitHubError) || (e.status !== 409 && e.status !== 422)) throw e;
+        const latest = await loadLatest(s, trip.id);
+        if (!latest) throw e;
+        if (JSON.stringify(withoutSpent(latest.trip)) !== base) {
+          throw new Error('行程在別台裝置被改過了。你這頁的修改還在，先記下要改的地方，再重新載入');
+        }
+        mergeSpent(trip, latest.trip);
+        sha = await putFile(s, tripPath(trip.id), JSON.stringify(compactTrip(trip), null, 2) + '\n', latest.sha, message);
+        renderDays();
+      }
+      base = JSON.stringify(withoutSpent(trip));
       isNew = false;
       const { index, sha: idxSha } = await loadIndex(s);
       const next = upsertIndex(index, summarize(trip));
@@ -528,6 +564,13 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
       { class: 'card form' },
       h('label', {}, '名稱', titleIn),
       h('div', { class: 'row' }, h('label', {}, '出發', startIn), h('label', {}, '回程', endIn)),
+      h(
+        'label',
+        {},
+        '匯率（1 日圓＝幾台幣）',
+        h('div', { class: 'row rate-row' }, rateIn, h('button', { type: 'button', class: 'small', onclick: fillRate }, '抓今天匯率')),
+        h('small', {}, '空白就用網路上的即時匯率；固定一個數字，記帳換算就不會每天變'),
+      ),
     ),
     daysBox,
     h('footer', { class: 'foot' }, isNew ? null : h('button', { type: 'button', class: 'danger small', onclick: removeTrip }, '刪除這趟行程')),

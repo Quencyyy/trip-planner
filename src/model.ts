@@ -43,10 +43,15 @@ export interface Item {
 }
 
 /** 一筆實際花費，金額是日圓整數 */
+export type Pay = 'card' | 'cash';
+export const PAY_LABEL: Record<Pay, string> = { card: '信用卡', cash: '現金' };
+export const PAY_ICON: Record<Pay, string> = { card: '💳', cash: '💴' };
+
 export interface Expense {
   id: string;
   amount: number;
   note: string;
+  pay: Pay; // 兩人各用一種方式付：信用卡一人、現金一人
 }
 
 export function blankItem(id = newId()): Item {
@@ -65,6 +70,7 @@ export interface Trip {
   startDate: string;
   endDate: string;
   days: Day[];
+  twdRate: number; // 1 日圓＝幾台幣；0 表示用網路上的即時匯率
   guide: string; // 行前／回國清單，例如 "japan" → public/data/guides/japan.json；空白就不顯示
 }
 
@@ -212,6 +218,12 @@ export function localToday(now = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
+/** 只允許 http(s) 連結，擋掉 javascript: 之類會在網站上執行程式的網址 */
+export function safeUrl(u: string): string {
+  const t = u.trim();
+  return /^https?:\/\/[^\s]+$/i.test(t) ? t : '';
+}
+
 export function mapsUrl(place: string): string {
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(place);
 }
@@ -233,7 +245,9 @@ export function normalizeTrip(raw: unknown): Trip {
     endDate,
   );
   const guide = typeof r.guide === 'string' && isValidId(r.guide) ? r.guide : '';
-  return { id: r.id, title: String(r.title ?? ''), startDate, endDate, days: fixed, guide };
+  const rate = Number(r.twdRate);
+  const twdRate = Number.isFinite(rate) && rate > 0 && rate < 10 ? rate : 0;
+  return { id: r.id, title: String(r.title ?? ''), startDate, endDate, days: fixed, twdRate, guide };
 }
 
 function normalizeItem(raw: unknown): Item {
@@ -256,7 +270,7 @@ function normalizeItem(raw: unknown): Item {
     duration: str(it.duration),
     spent: normalizeExpenses(it.spent),
     booking,
-    link: str(it.link),
+    link: safeUrl(str(it.link)),
   };
 }
 
@@ -283,13 +297,18 @@ function normalizeExpenses(raw: unknown): Expense[] {
     const e = (r ?? {}) as Partial<Record<keyof Expense, unknown>>;
     const amount = Math.round(Number(e.amount));
     if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_AMOUNT) continue;
-    out.push({ id: e.id == null || e.id === '' ? newId() : String(e.id), amount, note: e.note == null ? '' : String(e.note) });
+    out.push({
+      id: e.id == null || e.id === '' ? newId() : String(e.id),
+      amount,
+      note: e.note == null ? '' : String(e.note),
+      pay: e.pay === 'cash' ? 'cash' : 'card',
+    });
   }
   return out;
 }
 
 function compactExpense(e: Expense): Partial<Expense> {
-  return e.note ? { id: e.id, amount: e.amount, note: e.note } : { id: e.id, amount: e.amount };
+  return e.note ? { id: e.id, amount: e.amount, pay: e.pay, note: e.note } : { id: e.id, amount: e.amount, pay: e.pay };
 }
 
 export const sumExpenses = (list: Expense[]): number => list.reduce((a, e) => a + e.amount, 0);
@@ -301,6 +320,58 @@ export function dayTotal(d: Day): number {
 
 export function tripTotal(t: Trip): number {
   return t.days.reduce((a, d) => a + dayTotal(d), 0);
+}
+
+export function allExpenses(t: Trip): Expense[] {
+  return t.days.flatMap((d) => [...d.items.flatMap((it) => it.spent), ...d.spent]);
+}
+
+/**
+ * 分帳：一人刷卡、一人付現，各付一半。
+ * 回傳刷卡、現金合計，以及誰要給誰多少（四捨五入到 1 日圓）。
+ */
+export function settle(list: Expense[]): { card: number; cash: number; from: Pay | null; to: Pay | null; amount: number } {
+  const card = sumExpenses(list.filter((e) => e.pay === 'card'));
+  const cash = sumExpenses(list.filter((e) => e.pay === 'cash'));
+  const amount = Math.round(Math.abs(card - cash) / 2);
+  if (amount === 0) return { card, cash, from: null, to: null, amount: 0 };
+  return card > cash ? { card, cash, from: 'cash', to: 'card', amount } : { card, cash, from: 'card', to: 'cash', amount };
+}
+
+export function formatTwd(yen: number, rate: number): string {
+  return 'NT$' + Math.round(yen * rate).toLocaleString('en-US');
+}
+
+/** 拿掉所有記帳，用來比較「行程本身」有沒有被別人改過 */
+export function withoutSpent(t: Trip): unknown {
+  return { ...t, days: t.days.map((d) => ({ date: d.date, items: d.items.map((it) => ({ ...it, spent: [] })) })) };
+}
+
+/**
+ * 編輯頁存檔前：記帳以 GitHub 上最新的為準（編輯頁不改記帳）。
+ * 被刪掉的項目若有記帳，移到那天的「其他花費」，不會不見。
+ */
+export function mergeSpent(mine: Trip, latest: Trip): void {
+  const byItem = new Map<string, { date: string; title: string; spent: Expense[] }>();
+  const byDay = new Map<string, Expense[]>();
+  for (const d of latest.days) {
+    byDay.set(d.date, d.spent);
+    for (const it of d.items) byItem.set(it.id, { date: d.date, title: it.title, spent: it.spent });
+  }
+  const seen = new Set<string>();
+  for (const d of mine.days) {
+    d.spent = [...(byDay.get(d.date) ?? [])];
+    for (const it of d.items) {
+      it.spent = [...(byItem.get(it.id)?.spent ?? [])];
+      seen.add(it.id);
+    }
+  }
+  for (const [id, x] of byItem) {
+    if (seen.has(id) || x.spent.length === 0) continue;
+    const day = mine.days.find((d) => d.date === x.date) ?? mine.days[0];
+    if (!day) continue;
+    day.spent.push(...x.spent.map((e) => ({ ...e, note: [x.title, e.note].filter(Boolean).join('：') })));
+  }
 }
 
 /** 找到記帳要加的地方：itemId 為空字串就是那天的其他花費 */
@@ -317,15 +388,21 @@ export function compactItem(it: Item): Partial<Item> {
   for (const [k, v] of Object.entries(it)) {
     if (k === 'id' || k === 'type') continue;
     if (v === '' || v === 'none' || (Array.isArray(v) && v.length === 0)) continue;
+    if (k === 'link') {
+      const u = safeUrl(String(v));
+      if (u) out[k] = u;
+      continue;
+    }
     out[k] = k === 'spent' ? (v as Expense[]).map(compactExpense) : v;
   }
   return out as Partial<Item>;
 }
 
 export function compactTrip(t: Trip): unknown {
-  const { guide, ...rest } = t;
+  const { guide, twdRate, ...rest } = t;
   return {
     ...rest,
+    ...(twdRate ? { twdRate } : {}),
     ...(guide ? { guide } : {}),
     days: t.days.map((d) => (d.spent.length ? { date: d.date, items: d.items.map(compactItem), spent: d.spent.map(compactExpense) } : { date: d.date, items: d.items.map(compactItem) })),
   };

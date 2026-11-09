@@ -24,6 +24,12 @@ import {
   formatYen,
   parseAmount,
   tripTotal,
+  mergeSpent,
+  safeUrl,
+  settle,
+  withoutSpent,
+  type Expense,
+  type Trip,
 } from './model';
 
 const item = (id: string, time = '', extra: Partial<Item> = {}): Item => ({ ...blankItem(id), title: id, time, ...extra });
@@ -119,7 +125,7 @@ describe('交通與預約', () => {
     expect(routeBefore(items, 5)).toBeNull();
   });
   it('bookingRows 分待訂／已訂', () => {
-    const t = { id: 't', title: '', guide: '', startDate: '2026-01-01', endDate: '2026-01-01', days: [{ date: '2026-01-01', items: [item('a', '', { booking: 'todo' }), item('b', '', { booking: 'done' }), item('c')], spent: [] }] };
+    const t = { id: 't', title: '', guide: '', twdRate: 0, startDate: '2026-01-01', endDate: '2026-01-01', days: [{ date: '2026-01-01', items: [item('a', '', { booking: 'todo' }), item('b', '', { booking: 'done' }), item('c')], spent: [] }] };
     const r = bookingRows(t);
     expect(r.todo.map((x) => x.item.id)).toEqual(['a']);
     expect(r.done.map((x) => x.item.id)).toEqual(['b']);
@@ -162,7 +168,7 @@ describe('記帳', () => {
       ],
     };
     const t = normalizeTrip(raw);
-    expect(t.days[0].items[0].spent).toEqual([{ id: 'e1', amount: 1200, note: '門票' }]);
+    expect(t.days[0].items[0].spent).toEqual([{ id: 'e1', amount: 1200, note: '門票', pay: 'card' }]);
     expect(dayTotal(t.days[0])).toBe(1500);
     expect(tripTotal(t)).toBe(1500);
     const again = normalizeTrip(JSON.parse(JSON.stringify(compactTrip(t))));
@@ -183,8 +189,69 @@ describe('記帳', () => {
   it('縮短日期時，有記帳的那天也要擋', () => {
     const days = [
       { date: '2026-01-01', items: [], spent: [] },
-      { date: '2026-01-02', items: [], spent: [{ id: 'e', amount: 1, note: '' }] },
+      { date: '2026-01-02', items: [], spent: [{ id: 'e', amount: 1, note: '', pay: 'card' as const }] },
     ];
     expect(resizeDays(days, '2026-01-01', '2026-01-01').dropped).toEqual(['2026-01-02']);
+  });
+});
+
+describe('連結', () => {
+  it('只留 http(s)，擋 javascript:', () => {
+    expect(safeUrl(' https://example.com/a ')).toBe('https://example.com/a');
+    expect(safeUrl('javascript:alert(1)')).toBe('');
+    expect(safeUrl('JAVASCRIPT:alert(1)')).toBe('');
+    expect(safeUrl('data:text/html,x')).toBe('');
+    const t = normalizeTrip({ id: 't', startDate: '2026-01-01', endDate: '2026-01-01', days: [{ date: '2026-01-01', items: [{ id: 'a', link: 'javascript:alert(1)' }] }] });
+    expect(t.days[0].items[0].link).toBe('');
+    expect(compactItem({ ...t.days[0].items[0], link: 'javascript:x' })).not.toHaveProperty('link');
+  });
+});
+
+describe('分帳', () => {
+  const e = (amount: number, pay: 'card' | 'cash'): Expense => ({ id: String(amount), amount, note: '', pay });
+  it('刷卡付比較多：現金那位補一半差額', () => {
+    expect(settle([e(10000, 'card'), e(2000, 'cash')])).toEqual({ card: 10000, cash: 2000, from: 'cash', to: 'card', amount: 4000 });
+  });
+  it('現金付比較多、剛好打平、沒有記帳', () => {
+    expect(settle([e(1000, 'card'), e(3001, 'cash')])).toMatchObject({ from: 'card', to: 'cash', amount: 1001 });
+    expect(settle([e(500, 'card'), e(500, 'cash')])).toMatchObject({ from: null, amount: 0 });
+    expect(settle([])).toMatchObject({ card: 0, cash: 0, amount: 0 });
+  });
+  it('舊資料沒有付款方式時當作信用卡', () => {
+    const t = normalizeTrip({ id: 't', startDate: '2026-01-01', endDate: '2026-01-01', days: [{ date: '2026-01-01', items: [], spent: [{ id: 'x', amount: 5 }] }] });
+    expect(t.days[0].spent[0].pay).toBe('card');
+  });
+});
+
+describe('編輯頁衝突合併', () => {
+  const mk = (): Trip =>
+    normalizeTrip({
+      id: 't', startDate: '2026-01-01', endDate: '2026-01-02',
+      days: [
+        { date: '2026-01-01', items: [{ id: 'a', title: '午餐' }, { id: 'b', title: '咖啡' }] },
+        { date: '2026-01-02', items: [] },
+      ],
+    });
+  it('記帳用最新的；被刪掉的項目記帳移到那天的其他花費', () => {
+    const latest = mk();
+    latest.days[0].items[0].spent.push({ id: 'e1', amount: 1500, note: '', pay: 'cash' });
+    latest.days[0].items[1].spent.push({ id: 'e2', amount: 400, note: '拿鐵', pay: 'card' });
+    latest.days[1].spent.push({ id: 'e3', amount: 99, note: '', pay: 'card' });
+    const mine = mk();
+    mine.days[0].items[0].title = '改過的午餐';
+    mine.days[0].items.splice(1, 1); // 刪掉咖啡
+    mergeSpent(mine, latest);
+    expect(mine.days[0].items[0].title).toBe('改過的午餐');
+    expect(mine.days[0].items[0].spent.map((x) => x.id)).toEqual(['e1']);
+    expect(mine.days[0].spent).toEqual([{ id: 'e2', amount: 400, note: '咖啡：拿鐵', pay: 'card' }]);
+    expect(mine.days[1].spent.map((x) => x.id)).toEqual(['e3']);
+  });
+  it('withoutSpent 只看行程本身', () => {
+    const a = mk();
+    const b = mk();
+    b.days[0].spent.push({ id: 'x', amount: 1, note: '', pay: 'card' });
+    expect(JSON.stringify(withoutSpent(a))).toBe(JSON.stringify(withoutSpent(b)));
+    b.days[0].items[0].title = '別人改了';
+    expect(JSON.stringify(withoutSpent(a))).not.toBe(JSON.stringify(withoutSpent(b)));
   });
 });

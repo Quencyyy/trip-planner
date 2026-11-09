@@ -2,10 +2,18 @@
 
 import { fetchGuide, fetchIndex, fetchTrip } from './data';
 import { h, mount, toast } from './dom';
-import { GitHubError, isReady, loadSettings } from './github';
+import { GitHubError, NetworkError, isReady, loadSettings } from './github';
+import { liveRate } from './rate';
 import { addExpense, loadLatest, removeExpense, type Target } from './ledger';
 import {
   BOOKING_LABEL,
+  PAY_ICON,
+  PAY_LABEL,
+  allExpenses,
+  formatTwd,
+  normalizeTrip,
+  settle,
+  type Pay,
   TYPE_ICON,
   TYPE_LABEL,
   bookingRows,
@@ -199,12 +207,41 @@ function bookingView(trip: Trip): HTMLElement {
   );
 }
 
-function moneyView(trip: Trip): HTMLElement {
+interface Rate {
+  rate: number;
+  label: string; // 匯率來源說明
+}
+
+function moneyView(trip: Trip, rate: Rate | null): HTMLElement {
   const total = tripTotal(trip);
+  const st = settle(allExpenses(trip));
+  const twd = (n: number) => (rate ? h('span', { class: 'twd' }, `≈ ${formatTwd(n, rate.rate)}`) : null);
   return h(
     'div',
     { class: 'days' },
-    h('section', { class: 'card money-total' }, h('div', { class: 'money-label' }, '整趟花費'), h('div', { class: 'money-big' }, formatYen(total))),
+    h(
+      'section',
+      { class: 'card money-total' },
+      h('div', { class: 'money-label' }, '整趟花費'),
+      h('div', { class: 'money-big' }, formatYen(total)),
+      twd(total),
+      h(
+        'div',
+        { class: 'pay-split' },
+        h('div', {}, h('span', { class: 'money-label' }, `${PAY_ICON.card} 信用卡`), h('b', {}, formatYen(st.card))),
+        h('div', {}, h('span', { class: 'money-label' }, `${PAY_ICON.cash} 現金`), h('b', {}, formatYen(st.cash))),
+      ),
+      h(
+        'div',
+        { class: 'settle' },
+        total === 0
+          ? '還沒有記帳'
+          : st.from && st.to
+            ? h('span', {}, `各付一半：${PAY_LABEL[st.from]}那位要給${PAY_LABEL[st.to]}那位 `, h('b', {}, formatYen(st.amount)), rate ? `（${formatTwd(st.amount, rate.rate)}）` : '')
+            : '兩人付的剛好一樣多 🎉',
+      ),
+      rate ? h('small', { class: 'rate-note' }, rate.label) : null,
+    ),
     trip.days.map((d, i) => {
       const rows: { what: string; e: Expense }[] = [];
       for (const it of d.items) for (const e of it.spent) rows.push({ what: `${TYPE_ICON[it.type]} ${it.title || '（未命名）'}`, e });
@@ -218,7 +255,13 @@ function moneyView(trip: Trip): HTMLElement {
               'ul',
               { class: 'bk-list' },
               rows.map((r) =>
-                h('li', { class: 'bk-row' }, h('span', { class: 'bk-title' }, r.what, r.e.note ? h('small', {}, r.e.note) : null), h('span', { class: 'money-amt' }, formatYen(r.e.amount))),
+                h(
+                  'li',
+                  { class: 'bk-row' },
+                  h('span', { class: 'bk-icon', title: PAY_LABEL[r.e.pay] }, PAY_ICON[r.e.pay]),
+                  h('span', { class: 'bk-title' }, r.what, r.e.note ? h('small', {}, r.e.note) : null),
+                  h('span', { class: 'money-amt' }, formatYen(r.e.amount)),
+                ),
               ),
             )
           : h('p', { class: 'day-empty' }, '還沒有記帳'),
@@ -289,28 +332,81 @@ function guideView(tripId: string, groups: GuideGroup[], updated: string): HTMLE
   );
 }
 
+/* 這台裝置最後一次看到的行程，沒網路時拿來顯示 */
+const LAST_KEY = (id: string) => `trip-planner:last:${id}`;
+function saveLast(trip: Trip, fromSite = false): void {
+  try {
+    localStorage.setItem(LAST_KEY(trip.id), JSON.stringify({ at: Date.now(), fromSite, trip }));
+  } catch {
+    /* 存不了就算了 */
+  }
+}
+function loadLast(id: string): { at: number; fromSite: boolean; trip: Trip } | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(LAST_KEY(id)) ?? 'null');
+    return v?.trip ? { at: Number(v.at) || 0, fromSite: Boolean(v.fromSite), trip: normalizeTrip(v.trip) } : null;
+  } catch {
+    return null;
+  }
+}
+
+const PAY_KEY = 'trip-planner:pay';
+function loadPay(): Pay {
+  try {
+    return localStorage.getItem(PAY_KEY) === 'cash' ? 'cash' : 'card';
+  } catch {
+    return 'card';
+  }
+}
+function savePay(p: Pay): void {
+  try {
+    localStorage.setItem(PAY_KEY, p);
+  } catch {
+    /* 存不了就每次預設信用卡 */
+  }
+}
+
 export type TripTab = 'day' | 'book' | 'money' | 'before' | 'after';
 
 export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wantDate = ''): Promise<void> {
   const s = loadSettings();
   let canEdit = isReady(s);
   let tokenProblem = '';
+  let offlineAt = 0; // 沒網路時顯示的是幾點存下的資料
   let trip: Trip;
+  const fromCache = (e: unknown): Trip => {
+    const last = loadLast(id);
+    if (!last) throw e;
+    offlineAt = last.at;
+    canEdit = false;
+    return last.trip;
+  };
   if (canEdit) {
     // 有權杖時直接讀 GitHub 上最新的，剛記的帳不用等網站更新
     try {
       const latest = await loadLatest(s, id);
       if (!latest) throw new Error('GitHub 上找不到這趟行程');
       trip = latest.trip;
+      saveLast(trip);
     } catch (e) {
-      if (!(e instanceof GitHubError)) throw e;
-      canEdit = false;
-      tokenProblem = e.message;
-      trip = await fetchTrip(id);
+      if (e instanceof NetworkError) trip = fromCache(e);
+      else if (e instanceof GitHubError) {
+        canEdit = false;
+        tokenProblem = e.message;
+        trip = await fetchTrip(id).catch(fromCache);
+      } else throw e;
     }
   } else {
-    trip = await fetchTrip(id);
+    try {
+      trip = await fetchTrip(id);
+      // 網站的資料可能比這台上次從 GitHub 讀到的舊，舊的就不要蓋掉
+      const last = loadLast(id);
+      if (!last || last.fromSite) saveLast(trip, true);
+    } catch (e) {
+      trip = fromCache(e);
+    }
   }
+  let rate: Rate | null = trip.twdRate ? { rate: trip.twdRate, label: `匯率 ${trip.twdRate}（行程設定）` } : null;
   document.title = `${trip.title}｜旅遊計劃`;
   let guide: Guide | null = null;
   if (trip.guide) {
@@ -337,6 +433,15 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
 
   let openKey = ''; // 正在記帳的位置
   let busy = false;
+  let pay: Pay = loadPay();
+  if (!rate) {
+    void liveRate().then((r) => {
+      if (!r || trip.twdRate) return;
+      const d = new Date(r.at);
+      rate = { rate: r.rate, label: `即時匯率 ${Math.round(r.rate * 10000) / 10000}（${d.getMonth() + 1}/${d.getDate()} 更新），實際以刷卡帳單為準` };
+      if (tab === 'money') draw();
+    });
+  }
   const keyOf = (w: Target) => `${w.date}|${w.itemId}`;
 
   async function run(job: () => Promise<Trip>, done: string): Promise<void> {
@@ -345,6 +450,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
     root.classList.add('busy');
     try {
       trip = await job();
+      saveLast(trip);
       openKey = '';
       draw();
       toast(done);
@@ -367,11 +473,36 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
           ev.preventDefault();
           const n = parseAmount(amount.value);
           if (n == null) return toast('金額請填正整數（日圓）', 'err');
-          void run(() => addExpense(s, trip.id, where, n, note.value.trim()), `已記帳 ${formatYen(n)}`);
+          void run(() => addExpense(s, trip.id, where, n, note.value.trim(), pay), `已記帳 ${PAY_ICON[pay]} ${formatYen(n)}`);
         },
       },
       amount,
       note,
+      h(
+        'div',
+        { class: 'pay-toggle', role: 'group', 'aria-label': '付款方式' },
+        (['card', 'cash'] as Pay[]).map((p) =>
+          h(
+            'button',
+            {
+              type: 'button',
+              class: p === pay ? 'on' : '',
+              'aria-pressed': p === pay ? 'true' : 'false',
+              onclick: (ev: Event) => {
+                pay = p;
+                savePay(p);
+                const box = (ev.currentTarget as HTMLElement).parentElement!;
+                for (const b of box.children) {
+                  const on = b === ev.currentTarget;
+                  b.classList.toggle('on', on);
+                  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+                }
+              },
+            },
+            `${PAY_ICON[p]} ${PAY_LABEL[p]}`,
+          ),
+        ),
+      ),
       h(
         'div',
         { class: 'btns' },
@@ -386,7 +517,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
   const spentFor: SpentFor = (where, list) => {
     if (!canEdit && list.length === 0) return null;
     const chips = list.map((e) => {
-      const text = `${formatYen(e.amount)}${e.note ? ' ' + e.note : ''}`;
+      const text = `${PAY_ICON[e.pay]} ${formatYen(e.amount)}${e.note ? ' ' + e.note : ''}`;
       return canEdit
         ? h(
             'button',
@@ -420,7 +551,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
     const todoCount = bookingRows(trip).todo.length;
     let body: HTMLElement;
     if (tab === 'book') body = bookingView(trip);
-    else if (tab === 'money') body = moneyView(trip);
+    else if (tab === 'money') body = moneyView(trip, rate);
     else if ((tab === 'before' || tab === 'after') && guide) body = guideView(trip.id, guide[tab], guide.updated);
     else {
       const i = trip.days.findIndex((d) => d.date === selDate);
@@ -469,7 +600,9 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
         guide ? h('a', { href: `#/t/${id}/before`, class: tab === 'before' ? 'on' : '' }, '出發前') : null,
         guide ? h('a', { href: `#/t/${id}/after`, class: tab === 'after' ? 'on' : '' }, '回國') : null,
       ),
-      tokenProblem
+      offlineAt
+        ? h('div', { class: 'banner banner-err' }, `沒有網路：顯示 ${new Date(offlineAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} 存在這台的資料，現在不能記帳。`)
+        : tokenProblem
         ? h('div', { class: 'banner banner-err' }, tokenProblem + '。現在只能看，不能記帳。', h('a', { href: '#/settings' }, '前往設定'))
         : tab === 'money'
           ? canEdit

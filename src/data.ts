@@ -34,5 +34,10 @@ const groups = (v: unknown): GuideGroup[] =>
 export async function fetchGuide(name: string): Promise<Guide> {
   if (!isValidId(name)) throw new Error('清單名稱不正確');
   const j = (await getJson(`./data/guides/${name}.json`)) as Record<string, unknown>;
-  return { title: String(j?.title ?? ''), updated: String(j?.updated ?? ''), before: groups(j?.before), after: groups(j?.after) };
+  return { title: String(j?.title ?? ''), updated: String(j?.updated ?? ''), before: groups(j?.before),
+    after: groups(j?.after),
+    links: groups(j?.links)
+      .map((g) => ({ ...g, items: g.items.filter((it) => it.link) }))
+      .filter((g) => g.items.length),
+  };
 }

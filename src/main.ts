@@ -4,7 +4,7 @@ import { clearDirty, isDirty, renderEditHome, renderEditor, renderSettings } fro
 import { renderHome, renderTrip, type TripTab } from './view';
 
 // 舊網址 #/t/<id>/today 也會落到「預設顯示今天」
-const tabOf = (p?: string): TripTab => (p === 'book' || p === 'money' || p === 'before' || p === 'after' ? p : 'day');
+const tabOf = (p?: string): TripTab => (p === 'book' || p === 'money' || p === 'before' || p === 'after' || p === 'links' ? p : 'day');
 
 const app = document.getElementById('app')!;
 let current = location.hash;

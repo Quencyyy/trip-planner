@@ -89,6 +89,7 @@ export interface Guide {
   updated: string;
   before: GuideGroup[];
   after: GuideGroup[];
+  links: GuideGroup[]; // 常用連結（每項都要有 link）
 }
 
 export interface TripSummary {

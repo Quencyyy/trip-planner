@@ -144,7 +144,7 @@ a.sub { color: var(--link); }
 }
 
 /* 分頁 */
-.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin: 0 0 14px; max-width: 520px; }
+.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 5px; margin: 0 0 14px; max-width: 520px; }
 .tabs a {
   justify-content: center;
   white-space: nowrap;
@@ -502,6 +502,15 @@ button.link { border: 0; background: none; color: var(--link); padding: 2px 4px;
 .g-item small { display: block; color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
 .g-item input:checked + span { color: var(--muted); text-decoration: line-through; }
 .g-link { display: inline-block; font-size: 0.85rem; margin: 2px 0 0 30px; }
+.l-group { padding: 0; overflow: hidden; }
+.l-group.c1 { --day: var(--c1); } .l-group.c2 { --day: var(--c2); } .l-group.c3 { --day: var(--c3); } .l-group.c4 { --day: var(--c4); } .l-group.c0 { --day: var(--c0); }
+.l-title { margin: 0; padding: 10px 16px; font-size: 1rem; background: var(--day); border-bottom: 2.5px solid var(--line); }
+.l-list { list-style: none; margin: 0; padding: 2px 16px 6px; }
+.l-list li + li { border-top: 2px dotted var(--soft-line); }
+.l-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; color: var(--text); text-decoration: none; }
+.l-item > span:first-child { flex: 1; }
+.l-item small { display: block; color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+.l-go { color: var(--accent); font-weight: 700; }
 .g-foot { color: var(--muted); font-size: 0.8rem; text-align: center; margin: 0; }
 
 /* 記帳 */

@@ -299,6 +299,32 @@ function saveChecks(tripId: string, set: Set<string>): void {
   }
 }
 
+/** 常用連結：分組列出，整列可點 */
+function linksView(groups: GuideGroup[]): HTMLElement {
+  return h(
+    'div',
+    { class: 'days links' },
+    groups.map((g, gi) =>
+      h(
+        'section',
+        { class: `card l-group c${gi % 5}` },
+        h('h2', { class: 'l-title' }, g.title),
+        h(
+          'ul',
+          { class: 'l-list' },
+          g.items.map((it) =>
+            h(
+              'li',
+              {},
+              h('a', { class: 'l-item', href: it.link!, target: '_blank', rel: 'noopener' }, h('span', {}, it.text, it.hint ? h('small', {}, it.hint) : null), h('span', { class: 'l-go', 'aria-hidden': 'true' }, '↗')),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 /** 出發前／回國清單：大標摺疊，打勾只記在這台裝置 */
 function guideView(tripId: string, groups: GuideGroup[], updated: string): HTMLElement {
   const checks = loadChecks(tripId);
@@ -377,7 +403,7 @@ function savePay(p: Pay): void {
   }
 }
 
-export type TripTab = 'day' | 'book' | 'money' | 'before' | 'after';
+export type TripTab = 'day' | 'book' | 'money' | 'before' | 'after' | 'links';
 
 export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wantDate = ''): Promise<void> {
   const s = loadSettings();
@@ -428,6 +454,13 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
     }
   }
   if ((tab === 'before' || tab === 'after') && !guide) tab = 'day';
+  // 常用連結：清單裡的＋這趟行程項目上的連結
+  const tripLinks: GuideGroup = {
+    title: '🗓️ 這趟行程',
+    items: trip.days.flatMap((d) => d.items.filter((it) => it.link).map((it) => ({ id: it.id, text: it.title || '（未命名）', link: it.link }))),
+  };
+  const linkGroups = [...(tripLinks.items.length ? [tripLinks] : []), ...(guide?.links ?? [])];
+  if (tab === 'links' && !linkGroups.length) tab = 'day';
   const today = localToday();
   const inTrip = trip.startDate <= today && today <= trip.endDate;
   // 只顯示一天：網址指定的那天 → 旅行中就今天 → 還沒出發或已結束就第一天
@@ -564,6 +597,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
     if (tab === 'book') body = bookingView(trip);
     else if (tab === 'money') body = moneyView(trip, rate);
     else if ((tab === 'before' || tab === 'after') && guide) body = guideView(trip.id, guide[tab], guide.updated);
+    else if (tab === 'links') body = linksView(linkGroups);
     else {
       const i = trip.days.findIndex((d) => d.date === selDate);
       body =
@@ -610,6 +644,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
         h('a', { href: `#/t/${id}/money`, class: tab === 'money' ? 'on' : '' }, '記帳'),
         guide ? h('a', { href: `#/t/${id}/before`, class: tab === 'before' ? 'on' : '' }, '出發前') : null,
         guide ? h('a', { href: `#/t/${id}/after`, class: tab === 'after' ? 'on' : '' }, '回國') : null,
+        linkGroups.length ? h('a', { href: `#/t/${id}/links`, class: tab === 'links' ? 'on' : '' }, '連結') : null,
       ),
       offlineAt
         ? h('div', { class: 'banner banner-err' }, `沒有網路：顯示 ${new Date(offlineAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })} 存在這台的資料，現在不能記帳。`)

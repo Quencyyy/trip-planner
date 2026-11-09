@@ -63,3 +63,8 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     });
   });
 }
+
+// 列印時把收起來的「詳細」全部打開
+window.addEventListener('beforeprint', () => {
+  document.querySelectorAll<HTMLDetailsElement>('details.item-more').forEach((d) => (d.open = true));
+});

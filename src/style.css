@@ -265,6 +265,13 @@ a.sub { color: var(--link); }
 @media (prefers-color-scheme: dark) {
   .chip.ticket { background: #433a66; color: #ddd4ff; }
 }
+.item-more { margin-top: 4px; font-size: 0.88rem; }
+.item-more > summary { cursor: pointer; color: var(--accent); width: fit-content; list-style: none; }
+.item-more > summary::-webkit-details-marker { display: none; }
+.item-more > summary::after { content: ' ▾'; }
+.item-more[open] > summary::after { content: ' ▴'; }
+.item-more .steps { margin-top: 4px; }
+.chip.ticket { white-space: normal; }
 .item-note { color: var(--muted); font-size: 0.9rem; white-space: pre-wrap; margin-top: 3px; overflow-wrap: anywhere; }
 .item-links { display: flex; gap: 14px; font-size: 0.88rem; margin-top: 3px; }
 .item-links:empty { display: none; }

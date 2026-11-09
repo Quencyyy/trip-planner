@@ -101,6 +101,9 @@ type SpentFor = (where: Target, list: Expense[]) => HTMLElement | null;
 function itemView(it: Item, spent: HTMLElement | null): HTMLElement {
   const isMove = it.type === 'transport' || it.type === 'flight';
   const dur = durationLabel(it);
+  // 平常只露出備註第一行，其餘和路線步驟收進「詳細」
+  const [noteHead = '', ...rest] = it.note.split('\n');
+  const noteRest = rest.join('\n').trim();
   return h(
     'li',
     { class: `item t-${it.type}` },
@@ -121,10 +124,18 @@ function itemView(it: Item, spent: HTMLElement | null): HTMLElement {
         it.title || '（未命名）',
         it.booking !== 'none' ? chip(BOOKING_LABEL[it.booking], `bk-${it.booking}`) : null,
       ),
-      it.steps.length ? h('ol', { class: 'steps' }, it.steps.map((s) => h('li', {}, s))) : null,
       it.place ? h('a', { class: 'item-place', href: it.link && !isMove && /maps/.test(it.link) ? it.link : mapsUrl(it.place), target: '_blank', rel: 'noopener' }, '📍 ' + it.place) : null,
       it.ticket ? h('div', { class: 'item-meta' }, chip('🎫 ' + it.ticket, 'ticket')) : null,
-      it.note ? h('div', { class: 'item-note' }, it.note) : null,
+      noteHead ? h('div', { class: 'item-note' }, noteHead) : null,
+      it.steps.length || noteRest
+        ? h(
+            'details',
+            { class: 'item-more' },
+            h('summary', {}, it.steps.length ? `路線 ${it.steps.length} 步` : '更多'),
+            it.steps.length ? h('ol', { class: 'steps' }, it.steps.map((s) => h('li', {}, s))) : null,
+            noteRest ? h('div', { class: 'item-note' }, noteRest) : null,
+          )
+        : null,
       h(
         'div',
         { class: 'item-links' },

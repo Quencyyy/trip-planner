@@ -1,20 +1,28 @@
 // 查看頁：旅程列表、旅程內容、今天、預約
 
 import { fetchIndex, fetchTrip } from './data';
-import { h, mount } from './dom';
+import { h, mount, toast } from './dom';
+import { GitHubError, isReady, loadSettings } from './github';
+import { addExpense, loadLatest, removeExpense, type Target } from './ledger';
 import {
   BOOKING_LABEL,
   TYPE_ICON,
   TYPE_LABEL,
   bookingRows,
+  dayTotal,
   directionsUrl,
   durationLabel,
   formatDay,
   formatRange,
+  formatYen,
   localToday,
   mapsUrl,
+  parseAmount,
   routeBefore,
+  sumExpenses,
+  tripTotal,
   type Day,
+  type Expense,
   type Item,
   type Trip,
 } from './model';
@@ -78,7 +86,9 @@ function chip(text: string, cls: string): HTMLElement {
   return h('span', { class: `chip ${cls}` }, text);
 }
 
-function itemView(it: Item): HTMLElement {
+type SpentFor = (where: Target, list: Expense[]) => HTMLElement | null;
+
+function itemView(it: Item, spent: HTMLElement | null): HTMLElement {
   const isMove = it.type === 'transport' || it.type === 'flight';
   const dur = durationLabel(it);
   return h(
@@ -103,9 +113,7 @@ function itemView(it: Item): HTMLElement {
       ),
       it.steps.length ? h('ol', { class: 'steps' }, it.steps.map((s) => h('li', {}, s))) : null,
       it.place ? h('a', { class: 'item-place', href: it.link && !isMove && /maps/.test(it.link) ? it.link : mapsUrl(it.place), target: '_blank', rel: 'noopener' }, '📍 ' + it.place) : null,
-      it.cost || it.ticket
-        ? h('div', { class: 'item-meta' }, it.cost ? chip('💰 ' + it.cost, 'cost') : null, it.ticket ? chip('🎫 ' + it.ticket, 'ticket') : null)
-        : null,
+      it.ticket ? h('div', { class: 'item-meta' }, chip('🎫 ' + it.ticket, 'ticket')) : null,
       it.note ? h('div', { class: 'item-note' }, it.note) : null,
       h(
         'div',
@@ -115,6 +123,7 @@ function itemView(it: Item): HTMLElement {
           : null,
         it.link && !(it.place && /maps/.test(it.link)) ? h('a', { href: it.link, target: '_blank', rel: 'noopener' }, '🔗 相關連結') : null,
       ),
+      spent,
     ),
   );
 }
@@ -127,18 +136,23 @@ function routeView(from: string, to: string): HTMLElement {
   );
 }
 
-function itemsView(items: Item[]): HTMLElement {
+function itemsView(day: Day, spentFor: SpentFor): HTMLElement {
+  const items = day.items;
   const out: HTMLElement[] = [];
   items.forEach((it, i) => {
     const r = routeBefore(items, i);
     if (r) out.push(routeView(r[0], r[1]));
-    out.push(itemView(it));
+    // 「其他」多半是提醒事項，不放記帳按鈕（已有的記帳仍顯示）
+    const spent = it.type === 'other' && it.spent.length === 0 ? null : spentFor({ date: day.date, itemId: it.id }, it.spent);
+    out.push(itemView(it, spent));
   });
   return h('ol', { class: 'items' }, out);
 }
 
-function dayView(day: Day, n: number, today: string): HTMLElement {
+function dayView(day: Day, n: number, today: string, spentFor: SpentFor): HTMLElement {
   const isToday = day.date === today;
+  const total = dayTotal(day);
+  const other = spentFor({ date: day.date, itemId: '' }, day.spent);
   return h(
     'section',
     { class: `day c${(n - 1) % 5}${isToday ? ' today' : ''}`, id: `d-${day.date}` },
@@ -148,8 +162,10 @@ function dayView(day: Day, n: number, today: string): HTMLElement {
       h('span', { class: 'day-n' }, `Day ${n}`),
       h('span', { class: 'day-date' }, formatDay(day.date)),
       isToday ? h('span', { class: 'badge' }, '今天') : null,
+      total ? h('span', { class: 'day-total' }, formatYen(total)) : null,
     ),
-    day.items.length === 0 ? h('p', { class: 'day-empty' }, '自由活動 ☁️') : itemsView(day.items),
+    day.items.length === 0 ? h('p', { class: 'day-empty' }, '自由活動 ☁️') : itemsView(day, spentFor),
+    other ? h('div', { class: 'day-other' }, h('span', { class: 'day-other-label' }, '🧾 其他花費'), other) : null,
   );
 }
 
@@ -181,43 +197,186 @@ function bookingView(trip: Trip): HTMLElement {
   );
 }
 
-export async function renderTrip(root: HTMLElement, id: string, tab: 'all' | 'today' | 'book'): Promise<void> {
-  const trip: Trip = await fetchTrip(id);
+function moneyView(trip: Trip): HTMLElement {
+  const total = tripTotal(trip);
+  return h(
+    'div',
+    { class: 'days' },
+    h('section', { class: 'card money-total' }, h('div', { class: 'money-label' }, '整趟花費'), h('div', { class: 'money-big' }, formatYen(total))),
+    trip.days.map((d, i) => {
+      const rows: { what: string; e: Expense }[] = [];
+      for (const it of d.items) for (const e of it.spent) rows.push({ what: `${TYPE_ICON[it.type]} ${it.title || '（未命名）'}`, e });
+      for (const e of d.spent) rows.push({ what: '🧾 其他', e });
+      return h(
+        'section',
+        { class: `day c${i % 5}` },
+        h('h2', { class: 'day-head' }, h('span', { class: 'day-n' }, `Day ${i + 1}`), h('span', { class: 'day-date' }, formatDay(d.date)), dayTotal(d) ? h('span', { class: 'day-total' }, formatYen(dayTotal(d))) : null),
+        rows.length
+          ? h(
+              'ul',
+              { class: 'bk-list' },
+              rows.map((r) =>
+                h('li', { class: 'bk-row' }, h('span', { class: 'bk-title' }, r.what, r.e.note ? h('small', {}, r.e.note) : null), h('span', { class: 'money-amt' }, formatYen(r.e.amount))),
+              ),
+            )
+          : h('p', { class: 'day-empty' }, '還沒有記帳'),
+      );
+    }),
+  );
+}
+
+export type TripTab = 'all' | 'today' | 'book' | 'money';
+
+export async function renderTrip(root: HTMLElement, id: string, tab: TripTab): Promise<void> {
+  const s = loadSettings();
+  let canEdit = isReady(s);
+  let tokenProblem = '';
+  let trip: Trip;
+  if (canEdit) {
+    // 有權杖時直接讀 GitHub 上最新的，剛記的帳不用等網站更新
+    try {
+      const latest = await loadLatest(s, id);
+      if (!latest) throw new Error('GitHub 上找不到這趟行程');
+      trip = latest.trip;
+    } catch (e) {
+      if (!(e instanceof GitHubError)) throw e;
+      canEdit = false;
+      tokenProblem = e.message;
+      trip = await fetchTrip(id);
+    }
+  } else {
+    trip = await fetchTrip(id);
+  }
   document.title = `${trip.title}｜旅遊計劃`;
   const today = localToday();
   const inTrip = trip.startDate <= today && today <= trip.endDate;
-  const todoCount = bookingRows(trip).todo.length;
 
-  let body: HTMLElement;
-  if (tab === 'book') body = bookingView(trip);
-  else {
-    const days = tab === 'today' ? trip.days.filter((d) => d.date === today) : trip.days;
-    body =
-      tab === 'today' && days.length === 0
-        ? h('p', { class: 'empty' }, '今天不在這趟旅程的日期內。')
-        : h('div', { class: 'days' }, days.map((d) => dayView(d, trip.days.indexOf(d) + 1, today)));
+  let openKey = ''; // 正在記帳的位置
+  let busy = false;
+  const keyOf = (w: Target) => `${w.date}|${w.itemId}`;
+
+  async function run(job: () => Promise<Trip>, done: string): Promise<void> {
+    if (busy) return;
+    busy = true;
+    root.classList.add('busy');
+    try {
+      trip = await job();
+      openKey = '';
+      draw();
+      toast(done);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e), 'err');
+    } finally {
+      busy = false;
+      root.classList.remove('busy');
+    }
   }
 
-  mount(
-    root,
-    h(
-      'header',
-      { class: 'top' },
-      h('a', { class: 'back', href: '#/', 'aria-label': '回到列表' }, '‹'),
-      h('div', { class: 'top-text' }, h('h1', {}, trip.title || trip.id), h('div', { class: 'sub' }, formatRange(trip.startDate, trip.endDate))),
-      mascot(44),
-    ),
-    h(
-      'nav',
-      { class: 'tabs' },
-      h('a', { href: `#/t/${id}`, class: tab === 'all' ? 'on' : '' }, '全部'),
-      inTrip ? h('a', { href: `#/t/${id}/today`, class: tab === 'today' ? 'on' : '' }, '今天') : null,
-      h('a', { href: `#/t/${id}/book`, class: tab === 'book' ? 'on' : '' }, '預約', todoCount ? h('span', { class: 'dot' }, String(todoCount)) : null),
-    ),
-    body,
-    h('footer', { class: 'foot' }, h('a', { href: `#/edit/${id}` }, '✏️ 編輯這趟行程')),
-  );
+  function expenseForm(where: Target): HTMLElement {
+    const amount = h('input', { class: 'amt', inputmode: 'numeric', placeholder: '金額 ¥', 'aria-label': '金額（日圓）', autocomplete: 'off' });
+    const note = h('input', { placeholder: '買了什麼（可空白）', 'aria-label': '說明', maxlength: 40 });
+    const form = h(
+      'form',
+      {
+        class: 'spent-form',
+        onsubmit: (ev: Event) => {
+          ev.preventDefault();
+          const n = parseAmount(amount.value);
+          if (n == null) return toast('金額請填正整數（日圓）', 'err');
+          void run(() => addExpense(s, trip.id, where, n, note.value.trim()), `已記帳 ${formatYen(n)}`);
+        },
+      },
+      amount,
+      note,
+      h(
+        'div',
+        { class: 'btns' },
+        h('button', { class: 'small', type: 'button', onclick: () => ((openKey = ''), draw()) }, '取消'),
+        h('button', { class: 'primary small', type: 'submit' }, '記下'),
+      ),
+    );
+    requestAnimationFrame(() => amount.focus());
+    return form;
+  }
 
+  const spentFor: SpentFor = (where, list) => {
+    if (!canEdit && list.length === 0) return null;
+    const chips = list.map((e) => {
+      const text = `${formatYen(e.amount)}${e.note ? ' ' + e.note : ''}`;
+      return canEdit
+        ? h(
+            'button',
+            {
+              type: 'button',
+              class: 'chip spent',
+              title: '點一下刪除',
+              onclick: () => {
+                if (confirm(`刪除這筆記帳？\n${text}`)) void run(() => removeExpense(s, trip.id, where, e.id), '已刪除這筆');
+              },
+            },
+            text,
+          )
+        : chip(text, 'spent');
+    });
+    return h(
+      'div',
+      { class: 'spent-box' },
+      chips.length > 1 ? h('span', { class: 'spent-sum' }, `共 ${formatYen(sumExpenses(list))}`) : null,
+      ...chips,
+      canEdit
+        ? openKey === keyOf(where)
+          ? expenseForm(where)
+          : h('button', { type: 'button', class: 'add-spent', onclick: () => ((openKey = keyOf(where)), draw()) }, '＋ 記帳')
+        : null,
+    );
+  };
+
+  function draw(): void {
+    const y = window.scrollY;
+    const todoCount = bookingRows(trip).todo.length;
+    let body: HTMLElement;
+    if (tab === 'book') body = bookingView(trip);
+    else if (tab === 'money') body = moneyView(trip);
+    else {
+      const days = tab === 'today' ? trip.days.filter((d) => d.date === today) : trip.days;
+      body =
+        tab === 'today' && days.length === 0
+          ? h('p', { class: 'empty' }, '今天不在這趟旅程的日期內。')
+          : h('div', { class: 'days' }, days.map((d) => dayView(d, trip.days.indexOf(d) + 1, today, spentFor)));
+    }
+    const total = tripTotal(trip);
+
+    mount(
+      root,
+      h(
+        'header',
+        { class: 'top' },
+        h('a', { class: 'back', href: '#/', 'aria-label': '回到列表' }, '‹'),
+        h('div', { class: 'top-text' }, h('h1', {}, trip.title || trip.id), h('div', { class: 'sub' }, formatRange(trip.startDate, trip.endDate))),
+        mascot(44),
+      ),
+      h(
+        'nav',
+        { class: 'tabs' },
+        h('a', { href: `#/t/${id}`, class: tab === 'all' ? 'on' : '' }, '全部'),
+        inTrip ? h('a', { href: `#/t/${id}/today`, class: tab === 'today' ? 'on' : '' }, '今天') : null,
+        h('a', { href: `#/t/${id}/book`, class: tab === 'book' ? 'on' : '' }, '預約', todoCount ? h('span', { class: 'dot' }, String(todoCount)) : null),
+        h('a', { href: `#/t/${id}/money`, class: tab === 'money' ? 'on' : '' }, '記帳', total ? h('span', { class: 'dot money' }, formatYen(total)) : null),
+      ),
+      tokenProblem
+        ? h('div', { class: 'banner banner-err' }, tokenProblem + '。現在只能看，不能記帳。', h('a', { href: '#/settings' }, '前往設定'))
+        : tab === 'money'
+          ? canEdit
+            ? h('div', { class: 'banner' }, '記帳會存到 GitHub。repo 是公開的，知道網址的人都看得到金額。')
+            : h('div', { class: 'banner' }, '目前只能看。要記帳請先到 ', h('a', { href: '#/settings' }, '設定'), ' 貼上 GitHub 權杖。')
+          : null,
+      body,
+      h('footer', { class: 'foot' }, h('a', { href: `#/edit/${id}` }, '✏️ 編輯這趟行程')),
+    );
+    window.scrollTo(0, y);
+  }
+
+  draw();
   if (tab === 'all' && inTrip) {
     requestAnimationFrame(() => document.getElementById(`d-${today}`)?.scrollIntoView({ block: 'start' }));
   }

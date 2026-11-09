@@ -3,6 +3,7 @@ import {
   blankItem,
   bookingRows,
   compactItem,
+  compactTrip,
   durationLabel,
   routeBefore,
   type Item,
@@ -18,6 +19,11 @@ import {
   sortByTime,
   upsertIndex,
   utf8ToBase64,
+  dayTotal,
+  expenseList,
+  formatYen,
+  parseAmount,
+  tripTotal,
 } from './model';
 
 const item = (id: string, time = '', extra: Partial<Item> = {}): Item => ({ ...blankItem(id), title: id, time, ...extra });
@@ -39,9 +45,9 @@ describe('日期', () => {
 
 describe('resizeDays', () => {
   const days = [
-    { date: '2026-11-07', items: [item('a')] },
-    { date: '2026-11-08', items: [] },
-    { date: '2026-11-09', items: [item('b')] },
+    { date: '2026-11-07', items: [item('a')], spent: [] },
+    { date: '2026-11-08', items: [], spent: [] },
+    { date: '2026-11-09', items: [item('b')], spent: [] },
   ];
   it('延長時保留原項目、補空白天', () => {
     const r = resizeDays(days, '2026-11-07', '2026-11-10');
@@ -113,7 +119,7 @@ describe('交通與預約', () => {
     expect(routeBefore(items, 5)).toBeNull();
   });
   it('bookingRows 分待訂／已訂', () => {
-    const t = { id: 't', title: '', startDate: '2026-01-01', endDate: '2026-01-01', days: [{ date: '2026-01-01', items: [item('a', '', { booking: 'todo' }), item('b', '', { booking: 'done' }), item('c')] }] };
+    const t = { id: 't', title: '', startDate: '2026-01-01', endDate: '2026-01-01', days: [{ date: '2026-01-01', items: [item('a', '', { booking: 'todo' }), item('b', '', { booking: 'done' }), item('c')], spent: [] }] };
     const r = bookingRows(t);
     expect(r.todo.map((x) => x.item.id)).toEqual(['a']);
     expect(r.done.map((x) => x.item.id)).toEqual(['b']);
@@ -131,5 +137,46 @@ describe('航班時長', () => {
   it('航班不自動算（有時差），手動填的照用', () => {
     expect(durationLabel({ type: 'flight', time: '06:05', endTime: '09:30', duration: '' })).toBe('');
     expect(durationLabel({ type: 'flight', time: '06:05', endTime: '09:30', duration: '2h25m' })).toBe('2h25m');
+  });
+});
+
+describe('記帳', () => {
+  it('parseAmount 接受逗號、¥、全形數字，拒絕 0、負數、小數', () => {
+    expect(parseAmount('1,200')).toBe(1200);
+    expect(parseAmount('¥ 980')).toBe(980);
+    expect(parseAmount('１５００円')).toBe(1500);
+    expect(parseAmount('0')).toBeNull();
+    expect(parseAmount('-5')).toBeNull();
+    expect(parseAmount('12.5')).toBeNull();
+    expect(parseAmount('')).toBeNull();
+  });
+  it('formatYen 千分位', () => {
+    expect(formatYen(12345)).toBe('¥12,345');
+  });
+  it('讀進來會丟掉不合法的金額，存回去再讀回一樣，每日與總計正確', () => {
+    const raw = {
+      id: 't', title: '', startDate: '2026-01-01', endDate: '2026-01-02',
+      days: [
+        { date: '2026-01-01', items: [{ id: 'a', title: 'a', cost: '舊欄位', spent: [{ id: 'e1', amount: 1200, note: '門票' }, { id: 'bad', amount: 'x' }] }], spent: [{ id: 'e2', amount: 300 }] },
+        { date: '2026-01-02', items: [] },
+      ],
+    };
+    const t = normalizeTrip(raw);
+    expect(t.days[0].items[0].spent).toEqual([{ id: 'e1', amount: 1200, note: '門票' }]);
+    expect(dayTotal(t.days[0])).toBe(1500);
+    expect(tripTotal(t)).toBe(1500);
+    const again = normalizeTrip(JSON.parse(JSON.stringify(compactTrip(t))));
+    expect(again).toEqual(t);
+    expect(JSON.stringify(compactTrip(t))).not.toContain('cost');
+    expect(expenseList(t, '2026-01-01', '')).toBe(t.days[0].spent);
+    expect(expenseList(t, '2026-01-01', 'a')).toBe(t.days[0].items[0].spent);
+    expect(expenseList(t, '2026-01-03', '')).toBeNull();
+  });
+  it('縮短日期時，有記帳的那天也要擋', () => {
+    const days = [
+      { date: '2026-01-01', items: [], spent: [] },
+      { date: '2026-01-02', items: [], spent: [{ id: 'e', amount: 1, note: '' }] },
+    ];
+    expect(resizeDays(days, '2026-01-01', '2026-01-01').dropped).toEqual(['2026-01-02']);
   });
 });

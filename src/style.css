@@ -144,7 +144,7 @@ a.sub { color: var(--link); }
 }
 
 /* 分頁 */
-.tabs { display: flex; gap: 8px; margin: 0 0 16px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
 .tabs a {
   padding: 5px 16px;
   border-radius: 99px;
@@ -257,12 +257,10 @@ a.sub { color: var(--link); }
   white-space: nowrap;
 }
 .item-meta .chip { margin-left: 0; }
-.chip.cost { background: #fff1c2; color: #8a6a12; }
 .chip.ticket { background: #e6e0ff; color: #5b4a99; }
 .chip.bk-todo { background: var(--danger); color: #fff; }
 .chip.bk-done { background: #4fa875; color: #fff; }
 @media (prefers-color-scheme: dark) {
-  .chip.cost { background: #5a4a1e; color: #ffe9a3; }
   .chip.ticket { background: #433a66; color: #ddd4ff; }
 }
 .item-note { color: var(--muted); font-size: 0.9rem; white-space: pre-wrap; margin-top: 3px; overflow-wrap: anywhere; }
@@ -428,8 +426,46 @@ button.link { border: 0; background: none; color: var(--link); padding: 2px 4px;
 .toast-err { background: var(--danger); color: #fff; }
 .toast-hide { opacity: 0; }
 
+/* 記帳 */
+.dot.money { background: #4fa875; font-variant-numeric: tabular-nums; }
+.day-total {
+  font-size: 0.85rem;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 99px;
+  padding: 0 9px;
+  font-variant-numeric: tabular-nums;
+}
+.spent-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.spent-box .chip { margin-left: 0; }
+.chip.spent { background: #fff1c2; color: #7a5c0c; font-variant-numeric: tabular-nums; }
+button.chip.spent { border: 0; font: inherit; font-size: 0.82rem; cursor: pointer; }
+.spent-sum { font-size: 0.82rem; color: var(--muted); }
+.add-spent {
+  font-size: 0.8rem;
+  padding: 1px 10px;
+  border: 2px dashed var(--soft-line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 99px;
+}
+.spent-form { display: grid; grid-template-columns: 6.2em 1fr; gap: 6px; width: 100%; }
+.spent-form input { width: 100%; min-width: 0; padding: 6px 10px; font-size: 16px; }
+.spent-form input.amt { font-variant-numeric: tabular-nums; }
+.spent-form .btns { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 6px; }
+.day-other { border-top: 2px dotted var(--soft-line); padding-top: 8px; margin-top: 4px; }
+.day-other-label { font-size: 0.85rem; color: var(--muted); }
+.money-total { text-align: center; padding: 16px; }
+.money-label { color: var(--muted); font-size: 0.9rem; }
+.money-big { font-size: 2rem; font-variant-numeric: tabular-nums; }
+.money-amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.busy button, .busy input { pointer-events: none; opacity: 0.6; }
+@media (prefers-color-scheme: dark) {
+  .chip.spent { background: #5a4a1e; color: #ffe9a3; }
+}
+
 @media print {
   body { background: #fff; }
-  .foot, .tabs, .back, .route, .mascot { display: none; }
+  .foot, .tabs, .back, .route, .mascot, .add-spent, .spent-form { display: none; }
   .day { box-shadow: none; break-inside: avoid; }
 }

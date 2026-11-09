@@ -37,18 +37,26 @@ export interface Item {
   ticket: string; // 怎麼買票
   duration: string; // 手動填的時長，例如「6min」；空白就用起訖時間算
   // 通用
-  cost: string; // 「約 230 円」
+  spent: Expense[]; // 當天實際花費（記帳）
   booking: Booking;
   link: string; // 官網、訂位或地圖連結
 }
 
+/** 一筆實際花費，金額是日圓整數 */
+export interface Expense {
+  id: string;
+  amount: number;
+  note: string;
+}
+
 export function blankItem(id = newId()): Item {
-  return { id, type: 'spot', time: '', endTime: '', title: '', place: '', note: '', from: '', to: '', steps: [], ticket: '', duration: '', cost: '', booking: 'none', link: '' };
+  return { id, type: 'spot', time: '', endTime: '', title: '', place: '', note: '', from: '', to: '', steps: [], ticket: '', duration: '', spent: [], booking: 'none', link: '' };
 }
 
 export interface Day {
   date: string; // "2026-12-20"
   items: Item[];
+  spent: Expense[]; // 不屬於任何項目的其他花費
 }
 
 export interface Trip {
@@ -93,14 +101,14 @@ export function dateRange(start: string, end: string): string[] {
 
 /**
  * 依新日期區間重排 days。保留同日期的項目；
- * 回傳被移出區間、但還有項目的日期（呼叫端要擋下或提醒）。
+ * 回傳被移出區間、但還有項目或記帳的日期（呼叫端要擋下或提醒）。
  */
 export function resizeDays(days: Day[], start: string, end: string): { days: Day[]; dropped: string[] } {
   const byDate = new Map(days.map((d) => [d.date, d]));
   const range = dateRange(start, end);
   const keep = new Set(range);
-  const dropped = days.filter((d) => !keep.has(d.date) && d.items.length > 0).map((d) => d.date);
-  return { days: range.map((date) => byDate.get(date) ?? { date, items: [] }), dropped };
+  const dropped = days.filter((d) => !keep.has(d.date) && (d.items.length > 0 || d.spent.length > 0)).map((d) => d.date);
+  return { days: range.map((date) => byDate.get(date) ?? { date, items: [], spent: [] }), dropped };
 }
 
 export function summarize(t: Trip): TripSummary {
@@ -201,6 +209,7 @@ export function normalizeTrip(raw: unknown): Trip {
     days.map((d) => ({
       date: String(d.date),
       items: (Array.isArray(d.items) ? d.items : []).map(normalizeItem),
+      spent: normalizeExpenses(d.spent),
     })),
     startDate,
     endDate,
@@ -226,10 +235,61 @@ function normalizeItem(raw: unknown): Item {
     steps: Array.isArray(it.steps) ? it.steps.map(str).filter(Boolean) : [],
     ticket: str(it.ticket),
     duration: str(it.duration),
-    cost: str(it.cost),
+    spent: normalizeExpenses(it.spent),
     booking,
     link: str(it.link),
   };
+}
+
+export const MAX_AMOUNT = 10_000_000;
+
+/** 使用者輸入的金額：允許逗號、¥、全形數字；不合法回傳 null */
+export function parseAmount(input: string): number | null {
+  const t = input
+    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/[,，\s¥￥円]/g, '');
+  if (!/^\d+$/.test(t)) return null;
+  const n = Number(t);
+  return n > 0 && n <= MAX_AMOUNT ? n : null;
+}
+
+export function formatYen(n: number): string {
+  return '¥' + n.toLocaleString('en-US');
+}
+
+function normalizeExpenses(raw: unknown): Expense[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Expense[] = [];
+  for (const r of raw) {
+    const e = (r ?? {}) as Partial<Record<keyof Expense, unknown>>;
+    const amount = Math.round(Number(e.amount));
+    if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_AMOUNT) continue;
+    out.push({ id: e.id == null || e.id === '' ? newId() : String(e.id), amount, note: e.note == null ? '' : String(e.note) });
+  }
+  return out;
+}
+
+function compactExpense(e: Expense): Partial<Expense> {
+  return e.note ? { id: e.id, amount: e.amount, note: e.note } : { id: e.id, amount: e.amount };
+}
+
+export const sumExpenses = (list: Expense[]): number => list.reduce((a, e) => a + e.amount, 0);
+
+/** 一天的總花費（項目＋其他） */
+export function dayTotal(d: Day): number {
+  return sumExpenses(d.spent) + d.items.reduce((a, it) => a + sumExpenses(it.spent), 0);
+}
+
+export function tripTotal(t: Trip): number {
+  return t.days.reduce((a, d) => a + dayTotal(d), 0);
+}
+
+/** 找到記帳要加的地方：itemId 為空字串就是那天的其他花費 */
+export function expenseList(t: Trip, date: string, itemId: string): Expense[] | null {
+  const d = t.days.find((x) => x.date === date);
+  if (!d) return null;
+  if (!itemId) return d.spent;
+  return d.items.find((x) => x.id === itemId)?.spent ?? null;
 }
 
 /** 存檔前把空白的選填欄位拿掉，JSON 比較好讀 */
@@ -238,13 +298,16 @@ export function compactItem(it: Item): Partial<Item> {
   for (const [k, v] of Object.entries(it)) {
     if (k === 'id' || k === 'type') continue;
     if (v === '' || v === 'none' || (Array.isArray(v) && v.length === 0)) continue;
-    out[k] = v;
+    out[k] = k === 'spent' ? (v as Expense[]).map(compactExpense) : v;
   }
   return out as Partial<Item>;
 }
 
 export function compactTrip(t: Trip): unknown {
-  return { ...t, days: t.days.map((d) => ({ date: d.date, items: d.items.map(compactItem) })) };
+  return {
+    ...t,
+    days: t.days.map((d) => (d.spent.length ? { date: d.date, items: d.items.map(compactItem), spent: d.spent.map(compactExpense) } : { date: d.date, items: d.items.map(compactItem) })),
+  };
 }
 
 function minutes(t: string): number | null {

@@ -14,6 +14,7 @@ import {
   dateRange,
   formatDay,
   formatRange,
+  formatYen,
   isDate,
   isValidId,
   normalizeTrip,
@@ -21,6 +22,7 @@ import {
   resizeDays,
   slugify,
   sortByTime,
+  sumExpenses,
   summarize,
   upsertIndex,
   type Booking,
@@ -104,7 +106,7 @@ export async function renderEditHome(root: HTMLElement): Promise<void> {
           title: titleIn.value.trim(),
           startDate: startIn.value,
           endDate: endIn.value,
-          days: dateRange(startIn.value, endIn.value).map((date) => ({ date, items: [] })),
+          days: dateRange(startIn.value, endIn.value).map((date) => ({ date, items: [], spent: [] })),
         };
         location.hash = `#/edit/${id}`;
       },
@@ -250,7 +252,7 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
     const sumIcon = h('span', { class: 'sum-icon' }, TYPE_ICON[it.type]);
     const sumTime = h('span', { class: 'item-time' }, it.time);
     const sumTitle = h('span', { class: 'item-title' }, it.title || '（未命名）');
-    type TextKey = 'time' | 'endTime' | 'title' | 'place' | 'note' | 'from' | 'to' | 'ticket' | 'duration' | 'cost' | 'link';
+    type TextKey = 'time' | 'endTime' | 'title' | 'place' | 'note' | 'from' | 'to' | 'ticket' | 'duration' | 'link';
     const field = (k: TextKey, el: HTMLInputElement | HTMLTextAreaElement) => {
       el.value = it[k];
       el.addEventListener('input', () => {
@@ -345,12 +347,10 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
           h('label', { class: 'narrow' }, '時長', field('duration', h('input', { placeholder: '6min' }))),
         ),
         h('label', { class: 'only-place' }, '地點', field('place', h('input', { placeholder: '會變成 Google 地圖連結' }))),
-        h(
-          'div',
-          { class: 'row' },
-          h('label', {}, '費用', field('cost', h('input', { placeholder: '約 230 元' }))),
-          h('label', {}, '預約', bookingIn),
-        ),
+        h('label', {}, '預約', bookingIn),
+        it.spent.length
+          ? h('p', { class: 'help' }, `已記帳 ${formatYen(sumExpenses(it.spent))}（${it.spent.length} 筆），要修改請到查看頁`)
+          : null,
         h('label', {}, '連結', field('link', h('input', { type: 'url', placeholder: '官網、訂位或地圖網址' }))),
         h('label', {}, '備註', field('note', h('textarea', { rows: 2, placeholder: '不要寫訂位代號、護照號碼' }))),
         h(
@@ -457,7 +457,7 @@ export async function renderEditor(root: HTMLElement, id: string): Promise<void>
     }
     const { days, dropped } = resizeDays(trip.days, start, end);
     if (dropped.length) {
-      toast(`${dropped.map(formatDay).join('、')} 還有項目，先把它們移到其他天或刪除`, 'err');
+      toast(`${dropped.map(formatDay).join('、')} 還有項目或記帳，先把它們移到其他天或刪除`, 'err');
       startIn.value = trip.startDate;
       endIn.value = trip.endDate;
       return;

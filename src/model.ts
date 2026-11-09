@@ -88,6 +88,7 @@ export interface Guide {
   title: string;
   updated: string;
   before: GuideGroup[];
+  during: GuideGroup[];
   after: GuideGroup[];
   links: GuideGroup[]; // 常用連結（每項都要有 link）
 }

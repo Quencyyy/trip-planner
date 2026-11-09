@@ -365,7 +365,7 @@ function guideView(tripId: string, groups: GuideGroup[], updated: string): HTMLE
         ),
       );
     }),
-    h('p', { class: 'g-foot' }, `規定會變動，出發前再看一次官方說明。整理於 ${updated}，打勾只記在這台裝置。`),
+    h('p', { class: 'g-foot' }, `規定會變動，以官方說明為準（整理於 ${updated}）。打勾只存在這台。`),
   );
 }
 
@@ -403,9 +403,12 @@ function savePay(p: Pay): void {
   }
 }
 
-export type TripTab = 'day' | 'book' | 'money' | 'before' | 'after' | 'links';
+export type TripTab = 'day' | 'book' | 'money' | 'notes' | 'links';
+type Stage = 'before' | 'during' | 'after';
+const STAGES: [Stage, string][] = [['before', '出發前'], ['during', '旅途中'], ['after', '回國']];
 
-export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wantDate = ''): Promise<void> {
+export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, sub = ''): Promise<void> {
+  const wantDate = tab === 'day' ? sub : '';
   const s = loadSettings();
   let canEdit = isReady(s);
   let tokenProblem = '';
@@ -453,7 +456,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
       guide = null; // 清單讀不到不影響行程
     }
   }
-  if ((tab === 'before' || tab === 'after') && !guide) tab = 'day';
+  if (tab === 'notes' && !guide) tab = 'day';
   // 常用連結：清單裡的＋這趟行程項目上的連結
   const tripLinks: GuideGroup = {
     title: '🗓️ 這趟行程',
@@ -466,6 +469,14 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
   // 只顯示一天：網址指定的那天 → 旅行中就今天 → 還沒出發或已結束就第一天
   const has = (d: string) => trip.days.some((x) => x.date === d);
   let selDate = has(wantDate) ? wantDate : inTrip && has(today) ? today : (trip.days[0]?.date ?? '');
+  // 注意事項：網址指定的階段 → 依日期（還沒出發／旅途中／最後一天起算回國）
+  let stage: Stage = STAGES.some(([k]) => k === sub) ? (sub as Stage) : today < trip.startDate ? 'before' : today < trip.endDate ? 'during' : 'after';
+  const pickStage = (k: Stage) => {
+    stage = k;
+    history.replaceState(null, '', `#/t/${encodeURIComponent(id)}/notes/${k}`);
+    draw();
+    window.scrollTo(0, 0);
+  };
   const pickDay = (d: string) => {
     selDate = d;
     openKey = '';
@@ -596,7 +607,19 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
     let body: HTMLElement;
     if (tab === 'book') body = bookingView(trip);
     else if (tab === 'money') body = moneyView(trip, rate);
-    else if ((tab === 'before' || tab === 'after') && guide) body = guideView(trip.id, guide[tab], guide.updated);
+    else if (tab === 'notes' && guide)
+      body = h(
+        'div',
+        { class: 'days' },
+        h(
+          'nav',
+          { class: 'day-strip stage-strip', 'aria-label': '選擇階段' },
+          STAGES.map(([k, label], n) =>
+            h('button', { type: 'button', class: `day-pick c${n + 1}${k === stage ? ' on' : ''}`, 'aria-current': k === stage ? 'step' : null, onclick: () => pickStage(k) }, h('span', { class: 'pick-n' }, label)),
+          ),
+        ),
+        guideView(trip.id, guide[stage], guide.updated),
+      );
     else if (tab === 'links') body = linksView(linkGroups);
     else {
       const i = trip.days.findIndex((d) => d.date === selDate);
@@ -642,8 +665,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
         h('a', { href: `#/t/${id}/day/${selDate}`, class: tab === 'day' ? 'on' : '' }, '行程'),
         h('a', { href: `#/t/${id}/book`, class: tab === 'book' ? 'on' : '' }, '預約', todoCount ? h('span', { class: 'dot' }, String(todoCount)) : null),
         h('a', { href: `#/t/${id}/money`, class: tab === 'money' ? 'on' : '' }, '記帳'),
-        guide ? h('a', { href: `#/t/${id}/before`, class: tab === 'before' ? 'on' : '' }, '出發前') : null,
-        guide ? h('a', { href: `#/t/${id}/after`, class: tab === 'after' ? 'on' : '' }, '回國') : null,
+        guide ? h('a', { href: `#/t/${id}/notes/${stage}`, class: tab === 'notes' ? 'on' : '' }, '注意事項') : null,
         linkGroups.length ? h('a', { href: `#/t/${id}/links`, class: tab === 'links' ? 'on' : '' }, '連結') : null,
       ),
       offlineAt

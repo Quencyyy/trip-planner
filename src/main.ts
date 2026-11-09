@@ -4,7 +4,9 @@ import { clearDirty, isDirty, renderEditHome, renderEditor, renderSettings } fro
 import { renderHome, renderTrip, type TripTab } from './view';
 
 // 舊網址 #/t/<id>/today 也會落到「預設顯示今天」
-const tabOf = (p?: string): TripTab => (p === 'book' || p === 'money' || p === 'before' || p === 'after' || p === 'links' ? p : 'day');
+// 舊網址 #/t/<id>/before、/after 會落到「注意事項」的對應階段
+const tabOf = (p?: string): TripTab => (p === 'book' || p === 'money' || p === 'links' ? p : p === 'notes' || p === 'before' || p === 'after' ? 'notes' : 'day');
+const subOf = (parts: string[]): string => (parts[2] === 'day' || parts[2] === 'notes' ? (parts[3] ?? '') : parts[2] === 'before' || parts[2] === 'after' ? parts[2] : '');
 
 const app = document.getElementById('app')!;
 let current = location.hash;
@@ -21,7 +23,7 @@ async function route(): Promise<void> {
     if (my === seq) app.replaceChildren(root);
   };
   try {
-    if (parts[0] === 't' && parts[1]) await renderTrip(root, parts[1], tabOf(parts[2]), parts[2] === 'day' ? (parts[3] ?? '') : '');
+    if (parts[0] === 't' && parts[1]) await renderTrip(root, parts[1], tabOf(parts[2]), subOf(parts));
     else if (parts[0] === 'edit' && parts[1]) await renderEditor(root, parts[1]);
     else if (parts[0] === 'edit') await renderEditHome(root);
     else if (parts[0] === 'settings') renderSettings(root);

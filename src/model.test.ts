@@ -119,7 +119,7 @@ describe('交通與預約', () => {
     expect(routeBefore(items, 5)).toBeNull();
   });
   it('bookingRows 分待訂／已訂', () => {
-    const t = { id: 't', title: '', startDate: '2026-01-01', endDate: '2026-01-01', days: [{ date: '2026-01-01', items: [item('a', '', { booking: 'todo' }), item('b', '', { booking: 'done' }), item('c')], spent: [] }] };
+    const t = { id: 't', title: '', guide: '', startDate: '2026-01-01', endDate: '2026-01-01', days: [{ date: '2026-01-01', items: [item('a', '', { booking: 'todo' }), item('b', '', { booking: 'done' }), item('c')], spent: [] }] };
     const r = bookingRows(t);
     expect(r.todo.map((x) => x.item.id)).toEqual(['a']);
     expect(r.done.map((x) => x.item.id)).toEqual(['b']);
@@ -171,6 +171,14 @@ describe('記帳', () => {
     expect(expenseList(t, '2026-01-01', '')).toBe(t.days[0].spent);
     expect(expenseList(t, '2026-01-01', 'a')).toBe(t.days[0].items[0].spent);
     expect(expenseList(t, '2026-01-03', '')).toBeNull();
+  });
+  it('guide：合法名稱保留並存回，不合法或空白就拿掉', () => {
+    const base = { id: 't', title: '', startDate: '2026-01-01', endDate: '2026-01-01', days: [] };
+    const t = normalizeTrip({ ...base, guide: 'japan' });
+    expect(t.guide).toBe('japan');
+    expect((compactTrip(t) as { guide?: string }).guide).toBe('japan');
+    expect(normalizeTrip({ ...base, guide: '../x' }).guide).toBe('');
+    expect('guide' in (compactTrip(normalizeTrip(base)) as object)).toBe(false);
   });
   it('縮短日期時，有記帳的那天也要擋', () => {
     const days = [

@@ -107,6 +107,7 @@ export async function renderEditHome(root: HTMLElement): Promise<void> {
           startDate: startIn.value,
           endDate: endIn.value,
           days: dateRange(startIn.value, endIn.value).map((date) => ({ date, items: [], spent: [] })),
+          guide: '',
         };
         location.hash = `#/edit/${id}`;
       },

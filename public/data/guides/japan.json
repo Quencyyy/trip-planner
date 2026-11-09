@@ -1,0 +1,73 @@
+{
+  "title": "日本自由行",
+  "updated": "2026-11-09",
+  "before": [
+    {
+      "title": "📄 證件與入境",
+      "items": [
+        { "id": "passport", "text": "護照效期涵蓋整趟旅程", "hint": "台灣護照免簽，可停留 90 天" },
+        { "id": "vjw", "text": "填好 Visit Japan Web（入境審查＋海關申報）", "hint": "完成後截圖 QR Code，入境時出示。兩人各自登錄，或用「同行家人」一起登錄", "link": "https://www.vjw.digital.go.jp/" },
+        { "id": "copies", "text": "護照、機票、訂房存一份在手機" }
+      ]
+    },
+    {
+      "title": "🧳 行李",
+      "items": [
+        { "id": "powerbank", "text": "行動電源只能放隨身行李", "hint": "不能託運；機上能不能用，依航空公司規定" },
+        { "id": "liquid", "text": "隨身液體單瓶 100ml 以內，裝透明夾鏈袋" },
+        { "id": "nomeat-jp", "text": "不要帶肉製品進日本", "hint": "肉乾、香腸、含肉泡麵都不行" },
+        { "id": "meds", "text": "常用藥品（自用量、保留原包裝）" },
+        { "id": "clothes", "text": "11 月底早晚偏涼，帶外套、洋蔥式穿搭" }
+      ]
+    },
+    {
+      "title": "💴 錢與交通卡",
+      "items": [
+        { "id": "yen", "text": "換一些日圓現金", "hint": "小店、寺廟、扭蛋常常只收現金" },
+        { "id": "card", "text": "信用卡開啟海外刷卡，帶兩張不同的卡" },
+        { "id": "ic", "text": "iPhone 錢包加 ICOCA／Suica，先試儲值", "hint": "有些卡別不能儲值，出發前先試；不行就到日本車站買實體卡" }
+      ]
+    },
+    {
+      "title": "📶 網路與 App",
+      "items": [
+        { "id": "esim", "text": "買 eSIM 或開漫遊，出發前先安裝好" },
+        { "id": "plug", "text": "日本插座和台灣一樣，一般不用轉接頭" },
+        { "id": "apps", "text": "下載 USJ 官方 App 並加入門票、Google 地圖" }
+      ]
+    },
+    {
+      "title": "🛡️ 保險",
+      "items": [
+        { "id": "insurance", "text": "保旅平險／旅遊不便險", "hint": "信用卡附贈的，確認要用那張卡付機票才有" }
+      ]
+    }
+  ],
+  "after": [
+    {
+      "title": "🧾 退稅（2026/11/1 起新制）",
+      "items": [
+        { "id": "tf-how", "text": "店裡先付含稅價，出境時海關確認後才退稅", "hint": "購物後 90 天內出境都可以", "link": "https://www.mlit.go.jp/kankocho/tax-free/page01_000001_00021.html" },
+        { "id": "tf-passport", "text": "結帳時出示護照，說要辦免稅（Tax-free）" },
+        { "id": "tf-airport", "text": "到機場先辦退稅確認，再去託運", "hint": "海關可能要看免稅品，先別打包到行李箱最底。實際流程看機場指示" },
+        { "id": "tf-refund", "text": "退款方式和手續費每家店不同，結帳時問清楚" }
+      ]
+    },
+    {
+      "title": "✈️ 去機場",
+      "items": [
+        { "id": "early", "text": "提早到機場，退稅和報到都要排隊" },
+        { "id": "pack", "text": "行動電源放隨身、液體 100ml" },
+        { "id": "icoca", "text": "交通卡餘額在便利商店花掉" }
+      ]
+    },
+    {
+      "title": "🇹🇼 入境台灣",
+      "items": [
+        { "id": "nomeat-tw", "text": "肉製品不能帶回台灣", "hint": "含肉零食、泡麵、肉包都算；初犯罰 20 萬元。不確定就走動植物檢疫櫃檯問，主動問不會罰" },
+        { "id": "duty", "text": "免稅額：行李總值 3.5 萬元、酒 1.5 公升、菸 200 支", "hint": "以關務署公告為準，超過走紅線申報", "link": "https://web.customs.gov.tw/" },
+        { "id": "egate", "text": "可以用自動通關（e-Gate）" }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 // 查看頁：旅程列表、旅程內容、今天、預約
 
-import { fetchIndex, fetchTrip } from './data';
+import { fetchGuide, fetchIndex, fetchTrip } from './data';
 import { h, mount, toast } from './dom';
 import { GitHubError, isReady, loadSettings } from './github';
 import { addExpense, loadLatest, removeExpense, type Target } from './ledger';
@@ -23,6 +23,8 @@ import {
   tripTotal,
   type Day,
   type Expense,
+  type Guide,
+  type GuideGroup,
   type Item,
   type Trip,
 } from './model';
@@ -225,7 +227,69 @@ function moneyView(trip: Trip): HTMLElement {
   );
 }
 
-export type TripTab = 'day' | 'book' | 'money';
+const CHECK_KEY = (tripId: string) => `trip-planner:check:${tripId}`;
+
+function loadChecks(tripId: string): Set<string> {
+  try {
+    const v = JSON.parse(localStorage.getItem(CHECK_KEY(tripId)) ?? '[]');
+    return new Set(Array.isArray(v) ? v.map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+function saveChecks(tripId: string, set: Set<string>): void {
+  try {
+    localStorage.setItem(CHECK_KEY(tripId), JSON.stringify([...set]));
+  } catch {
+    /* 私密瀏覽等情況存不了，只是打勾不會記住 */
+  }
+}
+
+/** 出發前／回國清單：大標摺疊，打勾只記在這台裝置 */
+function guideView(tripId: string, groups: GuideGroup[], updated: string): HTMLElement {
+  const checks = loadChecks(tripId);
+  return h(
+    'div',
+    { class: 'days guide' },
+    groups.map((g, gi) => {
+      const count = h('span', { class: 'g-count' });
+      const refresh = () => {
+        const done = g.items.filter((it) => checks.has(it.id)).length;
+        count.textContent = `${done}/${g.items.length}`;
+        count.classList.toggle('all', done === g.items.length);
+      };
+      refresh();
+      return h(
+        'details',
+        { class: `card g-group c${gi % 5}` },
+        h('summary', {}, h('span', { class: 'g-title' }, g.title), count),
+        h(
+          'ul',
+          { class: 'g-list' },
+          g.items.map((it) => {
+            const box = h('input', { type: 'checkbox' });
+            box.checked = checks.has(it.id);
+            box.addEventListener('change', () => {
+              if (box.checked) checks.add(it.id);
+              else checks.delete(it.id);
+              saveChecks(tripId, checks);
+              refresh();
+            });
+            return h(
+              'li',
+              {},
+              h('label', { class: 'g-item' }, box, h('span', {}, it.text, it.hint ? h('small', {}, it.hint) : null)),
+              it.link ? h('a', { class: 'g-link', href: it.link, target: '_blank', rel: 'noopener' }, '官方說明 ↗') : null,
+            );
+          }),
+        ),
+      );
+    }),
+    h('p', { class: 'g-foot' }, `規定會變動，出發前再看一次官方說明。整理於 ${updated}，打勾只記在這台裝置。`),
+  );
+}
+
+export type TripTab = 'day' | 'book' | 'money' | 'before' | 'after';
 
 export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wantDate = ''): Promise<void> {
   const s = loadSettings();
@@ -248,6 +312,15 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
     trip = await fetchTrip(id);
   }
   document.title = `${trip.title}｜旅遊計劃`;
+  let guide: Guide | null = null;
+  if (trip.guide) {
+    try {
+      guide = await fetchGuide(trip.guide);
+    } catch {
+      guide = null; // 清單讀不到不影響行程
+    }
+  }
+  if ((tab === 'before' || tab === 'after') && !guide) tab = 'day';
   const today = localToday();
   const inTrip = trip.startDate <= today && today <= trip.endDate;
   // 只顯示一天：網址指定的那天 → 旅行中就今天 → 還沒出發或已結束就第一天
@@ -348,6 +421,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
     let body: HTMLElement;
     if (tab === 'book') body = bookingView(trip);
     else if (tab === 'money') body = moneyView(trip);
+    else if ((tab === 'before' || tab === 'after') && guide) body = guideView(trip.id, guide[tab], guide.updated);
     else {
       const i = trip.days.findIndex((d) => d.date === selDate);
       body =
@@ -376,7 +450,6 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
               dayView(trip.days[i], i + 1, today, spentFor),
             );
     }
-    const total = tripTotal(trip);
 
     mount(
       root,
@@ -392,7 +465,9 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, wa
         { class: 'tabs' },
         h('a', { href: `#/t/${id}/day/${selDate}`, class: tab === 'day' ? 'on' : '' }, '行程'),
         h('a', { href: `#/t/${id}/book`, class: tab === 'book' ? 'on' : '' }, '預約', todoCount ? h('span', { class: 'dot' }, String(todoCount)) : null),
-        h('a', { href: `#/t/${id}/money`, class: tab === 'money' ? 'on' : '' }, '記帳', total ? h('span', { class: 'dot money' }, formatYen(total)) : null),
+        h('a', { href: `#/t/${id}/money`, class: tab === 'money' ? 'on' : '' }, '記帳'),
+        guide ? h('a', { href: `#/t/${id}/before`, class: tab === 'before' ? 'on' : '' }, '出發前') : null,
+        guide ? h('a', { href: `#/t/${id}/after`, class: tab === 'after' ? 'on' : '' }, '回國') : null,
       ),
       tokenProblem
         ? h('div', { class: 'banner banner-err' }, tokenProblem + '。現在只能看，不能記帳。', h('a', { href: '#/settings' }, '前往設定'))

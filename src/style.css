@@ -144,9 +144,11 @@ a.sub { color: var(--link); }
 }
 
 /* 分頁 */
-.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin: 0 0 14px; max-width: 520px; }
 .tabs a {
-  padding: 5px 16px;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 5px 2px;
   border-radius: 99px;
   color: var(--text);
   background: var(--card);
@@ -463,8 +465,39 @@ button.link { border: 0; background: none; color: var(--link); padding: 2px 4px;
 .day-pick.is-today .pick-n { color: var(--accent); }
 .day-pick.is-today.on .pick-n { color: var(--text); }
 
+/* 出發前／回國清單 */
+.guide { gap: 12px; }
+.g-group { padding: 0; overflow: hidden; }
+.g-group > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  font-size: 1.05rem;
+  cursor: pointer;
+  background: var(--day);
+}
+.g-group.c1 { --day: var(--c1); } .g-group.c2 { --day: var(--c2); } .g-group.c3 { --day: var(--c3); } .g-group.c4 { --day: var(--c4); } .g-group.c0 { --day: var(--c0); }
+.g-group > summary::-webkit-details-marker { display: none; }
+.g-group > summary::after { content: '＋'; color: var(--muted); }
+.g-group[open] > summary { border-bottom: 2.5px solid var(--line); }
+.g-group[open] > summary::after { content: '－'; }
+.g-title { flex: 1; }
+.g-count { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.g-count.all { color: #4fa875; }
+.g-count.all::before { content: '✓ '; }
+.g-list { list-style: none; margin: 0; padding: 4px 16px 10px; }
+.g-list li { padding: 8px 0; border-top: 2px dotted var(--soft-line); }
+.g-list li:first-child { border-top: 0; }
+.g-item { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; color: var(--text); font-size: 0.98rem; }
+.g-item input { width: 20px; height: 20px; flex: none; margin: 2px 0 0; accent-color: var(--accent); }
+.g-item small { display: block; color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+.g-item input:checked + span { color: var(--muted); text-decoration: line-through; }
+.g-link { display: inline-block; font-size: 0.85rem; margin: 2px 0 0 30px; }
+.g-foot { color: var(--muted); font-size: 0.8rem; text-align: center; margin: 0; }
+
 /* 記帳 */
-.dot.money { background: #4fa875; font-variant-numeric: tabular-nums; }
 .day-total {
   font-size: 0.85rem;
   background: var(--card);

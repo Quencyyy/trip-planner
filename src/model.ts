@@ -65,6 +65,24 @@ export interface Trip {
   startDate: string;
   endDate: string;
   days: Day[];
+  guide: string; // 行前／回國清單，例如 "japan" → public/data/guides/japan.json；空白就不顯示
+}
+
+export interface GuideItem {
+  id: string;
+  text: string;
+  hint?: string;
+  link?: string;
+}
+export interface GuideGroup {
+  title: string;
+  items: GuideItem[];
+}
+export interface Guide {
+  title: string;
+  updated: string;
+  before: GuideGroup[];
+  after: GuideGroup[];
 }
 
 export interface TripSummary {
@@ -214,7 +232,8 @@ export function normalizeTrip(raw: unknown): Trip {
     startDate,
     endDate,
   );
-  return { id: r.id, title: String(r.title ?? ''), startDate, endDate, days: fixed };
+  const guide = typeof r.guide === 'string' && isValidId(r.guide) ? r.guide : '';
+  return { id: r.id, title: String(r.title ?? ''), startDate, endDate, days: fixed, guide };
 }
 
 function normalizeItem(raw: unknown): Item {
@@ -304,8 +323,10 @@ export function compactItem(it: Item): Partial<Item> {
 }
 
 export function compactTrip(t: Trip): unknown {
+  const { guide, ...rest } = t;
   return {
-    ...t,
+    ...rest,
+    ...(guide ? { guide } : {}),
     days: t.days.map((d) => (d.spent.length ? { date: d.date, items: d.items.map(compactItem), spent: d.spent.map(compactExpense) } : { date: d.date, items: d.items.map(compactItem) })),
   };
 }

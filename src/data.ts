@@ -1,6 +1,6 @@
 // 查看頁讀網站上發佈的資料檔（不需要權杖）
 
-import { normalizeTrip, type Trip, type TripIndex } from './model';
+import { isValidId, normalizeTrip, type Guide, type GuideGroup, type Trip, type TripIndex } from './model';
 
 async function getJson(path: string): Promise<unknown> {
   const res = await fetch(path, { cache: 'no-cache' });
@@ -18,4 +18,21 @@ export async function fetchIndex(): Promise<TripIndex> {
 
 export async function fetchTrip(id: string): Promise<Trip> {
   return normalizeTrip(await getJson(`./data/trips/${encodeURIComponent(id)}.json`));
+}
+
+const groups = (v: unknown): GuideGroup[] =>
+  (Array.isArray(v) ? v : []).map((g) => ({
+    title: String(g?.title ?? ''),
+    items: (Array.isArray(g?.items) ? g.items : []).map((it: Record<string, unknown>) => ({
+      id: String(it?.id ?? ''),
+      text: String(it?.text ?? ''),
+      hint: it?.hint ? String(it.hint) : undefined,
+      link: typeof it?.link === 'string' && /^https:\/\//.test(it.link) ? it.link : undefined,
+    })),
+  }));
+
+export async function fetchGuide(name: string): Promise<Guide> {
+  if (!isValidId(name)) throw new Error('清單名稱不正確');
+  const j = (await getJson(`./data/guides/${name}.json`)) as Record<string, unknown>;
+  return { title: String(j?.title ?? ''), updated: String(j?.updated ?? ''), before: groups(j?.before), after: groups(j?.after) };
 }

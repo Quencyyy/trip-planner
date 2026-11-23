@@ -84,13 +84,21 @@ export interface GuideGroup {
   title: string;
   items: GuideItem[];
 }
+/** 推薦買：先選門市，門市裡再按類別分組 */
+export interface ShopStore {
+  id: string;
+  title: string; // 例如「💊 藥妝店」
+  sub?: string; // 例如「大國・松本清」
+  hint?: string;
+  groups: GuideGroup[];
+}
 export interface Guide {
   title: string;
   updated: string;
   before: GuideGroup[];
   during: GuideGroup[];
   after: GuideGroup[];
-  shop: GuideGroup[]; // 推薦買（可打勾當購物清單）
+  shop: ShopStore[]; // 推薦買（可打勾當購物清單）
   links: GuideGroup[]; // 常用連結（每項都要有 link）
 }
 

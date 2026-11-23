@@ -472,6 +472,14 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
   let selDate = has(wantDate) ? wantDate : inTrip && has(today) ? today : (trip.days[0]?.date ?? '');
   // 注意事項：網址指定的階段 → 依日期（還沒出發／旅途中／最後一天起算回國）
   let stage: Stage = STAGES.some(([k]) => k === sub) ? (sub as Stage) : today < trip.startDate ? 'before' : today < trip.endDate ? 'during' : 'after';
+  // 推薦買：網址指定的門市 → 第一個
+  let store = guide?.shop.find((s) => s.id === sub) ?? guide?.shop[0];
+  const pickStore = (sid: string) => {
+    store = guide?.shop.find((s) => s.id === sid) ?? store;
+    history.replaceState(null, '', `#/t/${encodeURIComponent(id)}/shop/${sid}`);
+    draw();
+    window.scrollTo(0, 0);
+  };
   const pickStage = (k: Stage) => {
     stage = k;
     history.replaceState(null, '', `#/t/${encodeURIComponent(id)}/notes/${k}`);
@@ -621,8 +629,20 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
         ),
         guideView(trip.id, guide[stage], `規定會變動，以官方說明為準（整理於 ${guide.updated}）。打勾只存在這台。`),
       );
-    else if (tab === 'shop' && guide)
-      body = guideView(trip.id, guide.shop, `整理自網路討論（${guide.updated}），價格和庫存以店家為準。買了就打勾，只存在這台。`);
+    else if (tab === 'shop' && guide && store)
+      body = h(
+        'div',
+        { class: 'days' },
+        h(
+          'nav',
+          { class: 'day-strip store-strip', 'aria-label': '選擇門市' },
+          guide.shop.map((s, n) =>
+            h('button', { type: 'button', class: `day-pick c${n % 5}${s.id === store!.id ? ' on' : ''}`, 'aria-current': s.id === store!.id ? 'page' : null, onclick: () => pickStore(s.id) }, h('span', { class: 'pick-n' }, s.title), s.sub ? h('span', { class: 'pick-date' }, s.sub) : null),
+          ),
+        ),
+        store.hint ? h('p', { class: 'store-hint' }, store.hint) : null,
+        guideView(trip.id, store.groups, `整理自網路討論（${guide.updated}），價格和庫存以店家為準。同一樣東西在不同門市打勾會一起勾。打勾只存在這台。`),
+      );
     else if (tab === 'links') body = linksView(linkGroups);
     else {
       const i = trip.days.findIndex((d) => d.date === selDate);
@@ -669,7 +689,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
         h('a', { href: `#/t/${id}/book`, class: tab === 'book' ? 'on' : '' }, '預約', todoCount ? h('span', { class: 'dot' }, String(todoCount)) : null),
         h('a', { href: `#/t/${id}/money`, class: tab === 'money' ? 'on' : '' }, '記帳'),
         guide ? h('a', { href: `#/t/${id}/notes/${stage}`, class: tab === 'notes' ? 'on' : '' }, '注意事項') : null,
-        guide?.shop.length ? h('a', { href: `#/t/${id}/shop`, class: tab === 'shop' ? 'on' : '' }, '推薦買') : null,
+        guide?.shop.length ? h('a', { href: `#/t/${id}/shop/${store?.id ?? ''}`, class: tab === 'shop' ? 'on' : '' }, '推薦買') : null,
         linkGroups.length ? h('a', { href: `#/t/${id}/links`, class: tab === 'links' ? 'on' : '' }, '連結') : null,
       ),
       offlineAt
@@ -685,6 +705,14 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
       h('footer', { class: 'foot' }, h('a', { href: `#/edit/${id}` }, '✏️ 編輯這趟行程')),
     );
     window.scrollTo(0, y);
+    // 選中的日期／門市在標籤列外面時，橫向捲到看得到（只捲標籤列，不動整頁）
+    // 第一次畫的時候頁面還沒放到畫面上（量不到寬度），所以等下一個畫格
+    requestAnimationFrame(() => {
+      const on = root.querySelector<HTMLElement>('.day-strip .on');
+      const strip = on?.parentElement;
+      if (on && strip && (on.offsetLeft < strip.scrollLeft || on.offsetLeft + on.offsetWidth > strip.scrollLeft + strip.clientWidth))
+        strip.scrollLeft = on.offsetLeft - strip.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2;
+    });
   }
 
   draw();

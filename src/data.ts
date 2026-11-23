@@ -1,6 +1,6 @@
 // 查看頁讀網站上發佈的資料檔（不需要權杖）
 
-import { isValidId, normalizeTrip, type Guide, type GuideGroup, type Trip, type TripIndex } from './model';
+import { isValidId, normalizeTrip, type Guide, type GuideGroup, type ShopStore, type Trip, type TripIndex } from './model';
 
 async function getJson(path: string): Promise<unknown> {
   const res = await fetch(path, { cache: 'no-cache' });
@@ -37,7 +37,15 @@ export async function fetchGuide(name: string): Promise<Guide> {
   return { title: String(j?.title ?? ''), updated: String(j?.updated ?? ''), before: groups(j?.before),
     during: groups(j?.during),
     after: groups(j?.after),
-    shop: groups(j?.shop),
+    shop: (Array.isArray(j?.shop) ? j.shop : [])
+      .map((s: Record<string, unknown>) => ({
+        id: String(s?.id ?? ''),
+        title: String(s?.title ?? ''),
+        sub: s?.sub ? String(s.sub) : undefined,
+        hint: s?.hint ? String(s.hint) : undefined,
+        groups: groups(s?.groups),
+      }))
+      .filter((s: ShopStore) => isValidId(s.id) && s.groups.length),
     links: groups(j?.links)
       .map((g) => ({ ...g, items: g.items.filter((it) => it.link) }))
       .filter((g) => g.items.length),

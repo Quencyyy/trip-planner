@@ -11,7 +11,7 @@
 | `#/t/<id>/book` | 待訂／已訂 |
 | `#/t/<id>/money` | 記帳總覽：信用卡／現金合計、分帳、台幣換算 |
 | `#/t/<id>/before`、`/after` | 出發前／回國清單（大標摺疊，打勾只記在這台裝置） |
-| `#/t/<id>/shop` | 推薦買：美妝、藥局、伴手禮等熱門代購清單，可打勾當購物清單 |
+| `#/t/<id>/shop/<門市>` | 推薦買：先選門市（藥妝店、唐吉訶德、超市、伴手禮、機場、Bic Camera、LOFT、USJ），再按類別看；附日本／台灣價格與省多少，可打勾當購物清單 |
 | `#/edit`、`#/edit/<id>` | 新增行程；拖拉排序、跨天移動、依時間排序、設定匯率 |
 | `#/settings` | 貼 GitHub 權杖 |
 
@@ -19,7 +19,7 @@
 
 - `public/data/index.json`：行程列表
 - `public/data/trips/<id>.json`：每趟行程。`guide` 指定清單、`twdRate` 是固定匯率（不填就用即時匯率）
-- `public/data/guides/<名稱>.json`：注意事項（`before`／`during`／`after`）、推薦買（`shop`）、常用連結（`links`），目前有 `japan`
+- `public/data/guides/<名稱>.json`：注意事項（`before`／`during`／`after`）、推薦買（`shop`：門市 → 類別 → 品項）、常用連結（`links`），目前有 `japan`
 
 ## 儲存方式
 

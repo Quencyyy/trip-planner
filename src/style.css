@@ -519,6 +519,18 @@ button.link { border: 0; background: none; color: var(--link); padding: 2px 4px;
 .l-item > span:first-child { flex: 1; }
 .l-item small { display: block; color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
 .l-go { color: var(--accent); font-weight: 700; }
+/* 推薦買：每項平常摺起來，只露名稱和價格 */
+.s-item > summary { list-style: none; }
+.s-item > summary::-webkit-details-marker { display: none; }
+.s-item > summary > span { flex: 1; }
+.s-item > summary::after { content: '▾'; color: var(--muted); font-size: 0.85rem; margin-top: 2px; transition: transform 0.15s; }
+.s-item[open] > summary::after { transform: rotate(180deg); }
+.s-item > summary:has(input:checked) > span { color: var(--muted); text-decoration: line-through; }
+.s-body { margin: 6px 0 0 30px; display: grid; gap: 4px; justify-items: start; }
+.s-body small { color: var(--muted); font-size: 0.85rem; }
+.s-body .g-link { margin: 0; }
+.s-img { width: 120px; height: 120px; object-fit: contain; background: #fff; border: 2px solid var(--soft-line); border-radius: 12px; }
+@media (prefers-reduced-motion: reduce) { .s-item > summary::after { transition: none; } }
 .g-foot { color: var(--muted); font-size: 0.8rem; text-align: center; margin: 0; }
 
 /* 記帳 */

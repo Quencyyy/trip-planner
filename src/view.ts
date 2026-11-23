@@ -19,6 +19,7 @@ import {
   bookingRows,
   dayTotal,
   directionsUrl,
+  photoSearchUrl,
   durationLabel,
   formatDay,
   formatRange,
@@ -326,7 +327,8 @@ function linksView(groups: GuideGroup[]): HTMLElement {
 }
 
 /** 出發前／回國清單：大標摺疊，打勾只記在這台裝置 */
-function guideView(tripId: string, groups: GuideGroup[], foot: string): HTMLElement {
+/** 清單項目。shop：平常只露名稱和價格，點開才看照片、說明（畫面才不會太長） */
+function guideView(tripId: string, groups: GuideGroup[], foot: string, shop = false): HTMLElement {
   const checks = loadChecks(tripId);
   return h(
     'div',
@@ -355,6 +357,26 @@ function guideView(tripId: string, groups: GuideGroup[], foot: string): HTMLElem
               saveChecks(tripId, checks);
               refresh();
             });
+            if (shop && (it.hint || it.img || it.q)) {
+              // 在摺疊標題裡的勾選框：點它只打勾，不要順便展開
+              box.addEventListener('click', (e) => e.stopPropagation());
+              return h(
+                'li',
+                {},
+                h(
+                  'details',
+                  { class: 's-item' },
+                  h('summary', { class: 'g-item' }, box, h('span', {}, it.text)),
+                  h(
+                    'div',
+                    { class: 's-body' },
+                    it.img ? h('img', { class: 's-img', src: it.img, alt: it.text, loading: 'lazy' }) : null,
+                    it.hint ? h('small', {}, it.hint) : null,
+                    it.q ? h('a', { class: 'g-link', href: photoSearchUrl(it.q), target: '_blank', rel: 'noopener' }, '🔍 看商品照片 ↗') : null,
+                  ),
+                ),
+              );
+            }
             return h(
               'li',
               {},
@@ -641,7 +663,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
           ),
         ),
         store.hint ? h('p', { class: 'store-hint' }, store.hint) : null,
-        guideView(trip.id, store.groups, `整理自網路討論（${guide.updated}），價格和庫存以店家為準。同一樣東西在不同門市打勾會一起勾。打勾只存在這台。`),
+        guideView(trip.id, store.groups, `整理自網路討論（${guide.updated}），價格和庫存以店家為準。同一樣東西在不同門市打勾會一起勾。打勾只存在這台。`, true),
       );
     else if (tab === 'links') body = linksView(linkGroups);
     else {

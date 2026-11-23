@@ -79,6 +79,8 @@ export interface GuideItem {
   text: string;
   hint?: string;
   link?: string;
+  img?: string; // 商品照片網址（推薦買用，可省略）
+  q?: string; // 推薦買：用日文名稱搜尋商品照片
 }
 export interface GuideGroup {
   title: string;
@@ -476,4 +478,9 @@ export function bookingRows(t: Trip): { todo: BookingRow[]; done: BookingRow[] }
     }
   }
   return { todo, done };
+}
+
+/** 推薦買的搜尋照片連結（Google 圖片） */
+export function photoSearchUrl(q: string): string {
+  return 'https://www.google.com/search?udm=2&q=' + encodeURIComponent(q);
 }

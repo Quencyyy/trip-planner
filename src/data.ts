@@ -28,6 +28,8 @@ const groups = (v: unknown): GuideGroup[] =>
       text: String(it?.text ?? ''),
       hint: it?.hint ? String(it.hint) : undefined,
       link: typeof it?.link === 'string' && /^https:\/\//.test(it.link) ? it.link : undefined,
+      img: typeof it?.img === 'string' && /^https:\/\//.test(it.img) ? it.img : undefined,
+      q: it?.q ? String(it.q) : undefined,
     })),
   }));
 

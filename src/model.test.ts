@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   blankItem,
+  photoSearchUrl,
   bookingRows,
   compactItem,
   compactTrip,
@@ -253,5 +254,14 @@ describe('編輯頁衝突合併', () => {
     expect(JSON.stringify(withoutSpent(a))).toBe(JSON.stringify(withoutSpent(b)));
     b.days[0].items[0].title = '別人改了';
     expect(JSON.stringify(withoutSpent(a))).not.toBe(JSON.stringify(withoutSpent(b)));
+  });
+});
+
+describe('photoSearchUrl', () => {
+  it('日文名稱與空白、符號都會編碼成 Google 圖片搜尋網址', () => {
+    expect(photoSearchUrl('アネッサ UV&ミルク')).toBe(
+      'https://www.google.com/search?udm=2&q=' + encodeURIComponent('アネッサ UV&ミルク'),
+    );
+    expect(photoSearchUrl('a&b=c')).not.toContain('&b=c');
   });
 });

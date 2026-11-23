@@ -265,3 +265,14 @@ describe('photoSearchUrl', () => {
     expect(photoSearchUrl('a&b=c')).not.toContain('&b=c');
   });
 });
+
+describe('study（行前功課）', () => {
+  const base = { id: 't', title: '', startDate: '2026-01-01', endDate: '2026-01-01', days: [] };
+  it('合法名稱保留並在存檔時留著，不合法或沒有就不出現', () => {
+    const t = normalizeTrip({ ...base, study: 'osaka' });
+    expect(t.study).toBe('osaka');
+    expect((compactTrip(t) as { study?: string }).study).toBe('osaka');
+    expect(normalizeTrip({ ...base, study: '../x' }).study).toBeUndefined();
+    expect('study' in (compactTrip(normalizeTrip(base)) as object)).toBe(false);
+  });
+});

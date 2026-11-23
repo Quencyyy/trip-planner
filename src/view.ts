@@ -327,6 +327,19 @@ function linksView(groups: GuideGroup[]): HTMLElement {
 }
 
 /** 出發前／回國清單：大標摺疊，打勾只記在這台裝置 */
+/** 行前功課：同網站的靜態頁放進 iframe，高度跟著內容，不用跳到別的網站 */
+function studyView(name: string): HTMLElement {
+  const frame = h('iframe', { class: 'study', src: `./study/${name}.html`, title: '行前功課' });
+  frame.addEventListener('load', () => {
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    const fit = () => (frame.style.height = `${doc.documentElement.scrollHeight}px`);
+    fit();
+    new ResizeObserver(fit).observe(doc.body); // 字型載入、翻牌後高度可能變
+  });
+  return h('div', { class: 'days' }, frame);
+}
+
 /** 清單項目。shop：平常只露名稱和價格，點開才看照片、說明（畫面才不會太長） */
 function guideView(tripId: string, groups: GuideGroup[], foot: string, shop = false): HTMLElement {
   const checks = loadChecks(tripId);
@@ -425,7 +438,7 @@ function savePay(p: Pay): void {
   }
 }
 
-export type TripTab = 'day' | 'book' | 'money' | 'notes' | 'shop' | 'links';
+export type TripTab = 'day' | 'book' | 'money' | 'notes' | 'shop' | 'study' | 'links';
 type Stage = 'before' | 'during' | 'after';
 const STAGES: [Stage, string][] = [['before', '出發前'], ['during', '旅途中'], ['after', '回國']];
 
@@ -480,6 +493,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
   }
   if (tab === 'notes' && !guide) tab = 'day';
   if (tab === 'shop' && !guide?.shop.length) tab = 'day';
+  if (tab === 'study' && !trip.study) tab = 'day';
   // 常用連結：清單裡的＋這趟行程項目上的連結
   const tripLinks: GuideGroup = {
     title: '🗓️ 這趟行程',
@@ -665,6 +679,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
         store.hint ? h('p', { class: 'store-hint' }, store.hint) : null,
         guideView(trip.id, store.groups, `整理自網路討論（${guide.updated}），價格和庫存以店家為準。同一樣東西在不同門市打勾會一起勾。打勾只存在這台。`, true),
       );
+    else if (tab === 'study' && trip.study) body = studyView(trip.study);
     else if (tab === 'links') body = linksView(linkGroups);
     else {
       const i = trip.days.findIndex((d) => d.date === selDate);
@@ -706,12 +721,13 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
       ),
       h(
         'nav',
-        { class: `tabs${guide?.shop.length && linkGroups.length ? ' many' : ''}` },
+        { class: 'tabs' },
         h('a', { href: `#/t/${id}/day/${selDate}`, class: tab === 'day' ? 'on' : '' }, '行程'),
         h('a', { href: `#/t/${id}/book`, class: tab === 'book' ? 'on' : '' }, '預約', todoCount ? h('span', { class: 'dot' }, String(todoCount)) : null),
         h('a', { href: `#/t/${id}/money`, class: tab === 'money' ? 'on' : '' }, '記帳'),
         guide ? h('a', { href: `#/t/${id}/notes/${stage}`, class: tab === 'notes' ? 'on' : '' }, '注意事項') : null,
         guide?.shop.length ? h('a', { href: `#/t/${id}/shop/${store?.id ?? ''}`, class: tab === 'shop' ? 'on' : '' }, '推薦買') : null,
+        trip.study ? h('a', { href: `#/t/${id}/study`, class: tab === 'study' ? 'on' : '' }, '行前功課') : null,
         linkGroups.length ? h('a', { href: `#/t/${id}/links`, class: tab === 'links' ? 'on' : '' }, '連結') : null,
       ),
       offlineAt
@@ -730,10 +746,11 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
     // 選中的日期／門市在標籤列外面時，橫向捲到看得到（只捲標籤列，不動整頁）
     // 第一次畫的時候頁面還沒放到畫面上（量不到寬度），所以等下一個畫格
     requestAnimationFrame(() => {
-      const on = root.querySelector<HTMLElement>('.day-strip .on');
-      const strip = on?.parentElement;
-      if (on && strip && (on.offsetLeft < strip.scrollLeft || on.offsetLeft + on.offsetWidth > strip.scrollLeft + strip.clientWidth))
-        strip.scrollLeft = on.offsetLeft - strip.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2;
+      for (const on of root.querySelectorAll<HTMLElement>('.tabs .on, .day-strip .on')) {
+        const strip = on.parentElement;
+        if (strip && (on.offsetLeft - strip.offsetLeft < strip.scrollLeft || on.offsetLeft - strip.offsetLeft + on.offsetWidth > strip.scrollLeft + strip.clientWidth))
+          strip.scrollLeft = on.offsetLeft - strip.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2;
+      }
     });
   }
 

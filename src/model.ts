@@ -72,6 +72,7 @@ export interface Trip {
   days: Day[];
   twdRate: number; // 1 日圓＝幾台幣；0 表示用網路上的即時匯率
   guide: string; // 行前／回國清單，例如 "japan" → public/data/guides/japan.json；空白就不顯示
+  study?: string; // 行前功課頁，例如 "osaka" → public/study/osaka.html；沒有就不顯示分頁
 }
 
 export interface GuideItem {
@@ -260,7 +261,8 @@ export function normalizeTrip(raw: unknown): Trip {
   const guide = typeof r.guide === 'string' && isValidId(r.guide) ? r.guide : '';
   const rate = Number(r.twdRate);
   const twdRate = Number.isFinite(rate) && rate > 0 && rate < 10 ? rate : 0;
-  return { id: r.id, title: String(r.title ?? ''), startDate, endDate, days: fixed, twdRate, guide };
+  const study = typeof r.study === 'string' && isValidId(r.study) ? r.study : '';
+  return { id: r.id, title: String(r.title ?? ''), startDate, endDate, days: fixed, twdRate, guide, ...(study ? { study } : {}) };
 }
 
 function normalizeItem(raw: unknown): Item {
@@ -412,11 +414,12 @@ export function compactItem(it: Item): Partial<Item> {
 }
 
 export function compactTrip(t: Trip): unknown {
-  const { guide, twdRate, ...rest } = t;
+  const { guide, twdRate, study, ...rest } = t;
   return {
     ...rest,
     ...(twdRate ? { twdRate } : {}),
     ...(guide ? { guide } : {}),
+    ...(study ? { study } : {}),
     days: t.days.map((d) => (d.spent.length ? { date: d.date, items: d.items.map(compactItem), spent: d.spent.map(compactExpense) } : { date: d.date, items: d.items.map(compactItem) })),
   };
 }

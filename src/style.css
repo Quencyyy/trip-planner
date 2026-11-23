@@ -144,11 +144,13 @@ a.sub { color: var(--link); }
 }
 
 /* 分頁 */
-.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 5px; margin: 0 0 14px; max-width: 520px; }
+/* 分頁多時可以左右滑（手機一行放不下七個） */
+.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(max-content, 1fr); gap: 5px; margin: 0 -4px 10px 0; padding: 2px 4px 4px 0; max-width: 620px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
 .tabs a {
   justify-content: center;
   white-space: nowrap;
-  padding: 5px 2px;
+  padding: 5px 12px;
   border-radius: 99px;
   color: var(--text);
   background: var(--card);
@@ -159,8 +161,7 @@ a.sub { color: var(--link); }
   gap: 6px;
 }
 /* 六個分頁時字小一點，手機才擠得下 */
-.tabs.many { gap: 4px; }
-.tabs.many a { font-size: 0.84rem; padding: 5px 0; gap: 3px; }
+.study { display: block; width: 100%; min-height: 70vh; border: 0; border-radius: 18px; background: transparent; }
 .tabs a.on { background: var(--accent); color: var(--accent-ink); box-shadow: var(--sticker-sm); }
 .dot {
   background: var(--danger);

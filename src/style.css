@@ -158,6 +158,9 @@ a.sub { color: var(--link); }
   align-items: center;
   gap: 6px;
 }
+/* 六個分頁時字小一點，手機才擠得下 */
+.tabs.many { gap: 4px; }
+.tabs.many a { font-size: 0.84rem; padding: 5px 0; gap: 3px; }
 .tabs a.on { background: var(--accent); color: var(--accent-ink); box-shadow: var(--sticker-sm); }
 .dot {
   background: var(--danger);

@@ -326,7 +326,7 @@ function linksView(groups: GuideGroup[]): HTMLElement {
 }
 
 /** 出發前／回國清單：大標摺疊，打勾只記在這台裝置 */
-function guideView(tripId: string, groups: GuideGroup[], updated: string): HTMLElement {
+function guideView(tripId: string, groups: GuideGroup[], foot: string): HTMLElement {
   const checks = loadChecks(tripId);
   return h(
     'div',
@@ -365,7 +365,7 @@ function guideView(tripId: string, groups: GuideGroup[], updated: string): HTMLE
         ),
       );
     }),
-    h('p', { class: 'g-foot' }, `規定會變動，以官方說明為準（整理於 ${updated}）。打勾只存在這台。`),
+    h('p', { class: 'g-foot' }, foot),
   );
 }
 
@@ -403,7 +403,7 @@ function savePay(p: Pay): void {
   }
 }
 
-export type TripTab = 'day' | 'book' | 'money' | 'notes' | 'links';
+export type TripTab = 'day' | 'book' | 'money' | 'notes' | 'shop' | 'links';
 type Stage = 'before' | 'during' | 'after';
 const STAGES: [Stage, string][] = [['before', '出發前'], ['during', '旅途中'], ['after', '回國']];
 
@@ -457,6 +457,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
     }
   }
   if (tab === 'notes' && !guide) tab = 'day';
+  if (tab === 'shop' && !guide?.shop.length) tab = 'day';
   // 常用連結：清單裡的＋這趟行程項目上的連結
   const tripLinks: GuideGroup = {
     title: '🗓️ 這趟行程',
@@ -618,8 +619,10 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
             h('button', { type: 'button', class: `day-pick c${n + 1}${k === stage ? ' on' : ''}`, 'aria-current': k === stage ? 'step' : null, onclick: () => pickStage(k) }, h('span', { class: 'pick-n' }, label)),
           ),
         ),
-        guideView(trip.id, guide[stage], guide.updated),
+        guideView(trip.id, guide[stage], `規定會變動，以官方說明為準（整理於 ${guide.updated}）。打勾只存在這台。`),
       );
+    else if (tab === 'shop' && guide)
+      body = guideView(trip.id, guide.shop, `整理自網路討論（${guide.updated}），價格和庫存以店家為準。買了就打勾，只存在這台。`);
     else if (tab === 'links') body = linksView(linkGroups);
     else {
       const i = trip.days.findIndex((d) => d.date === selDate);
@@ -661,11 +664,12 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
       ),
       h(
         'nav',
-        { class: 'tabs' },
+        { class: `tabs${guide?.shop.length && linkGroups.length ? ' many' : ''}` },
         h('a', { href: `#/t/${id}/day/${selDate}`, class: tab === 'day' ? 'on' : '' }, '行程'),
         h('a', { href: `#/t/${id}/book`, class: tab === 'book' ? 'on' : '' }, '預約', todoCount ? h('span', { class: 'dot' }, String(todoCount)) : null),
         h('a', { href: `#/t/${id}/money`, class: tab === 'money' ? 'on' : '' }, '記帳'),
         guide ? h('a', { href: `#/t/${id}/notes/${stage}`, class: tab === 'notes' ? 'on' : '' }, '注意事項') : null,
+        guide?.shop.length ? h('a', { href: `#/t/${id}/shop`, class: tab === 'shop' ? 'on' : '' }, '推薦買') : null,
         linkGroups.length ? h('a', { href: `#/t/${id}/links`, class: tab === 'links' ? 'on' : '' }, '連結') : null,
       ),
       offlineAt

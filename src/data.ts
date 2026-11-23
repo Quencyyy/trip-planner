@@ -37,6 +37,7 @@ export async function fetchGuide(name: string): Promise<Guide> {
   return { title: String(j?.title ?? ''), updated: String(j?.updated ?? ''), before: groups(j?.before),
     during: groups(j?.during),
     after: groups(j?.after),
+    shop: groups(j?.shop),
     links: groups(j?.links)
       .map((g) => ({ ...g, items: g.items.filter((it) => it.link) }))
       .filter((g) => g.items.length),

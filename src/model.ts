@@ -90,6 +90,7 @@ export interface Guide {
   before: GuideGroup[];
   during: GuideGroup[];
   after: GuideGroup[];
+  shop: GuideGroup[]; // 推薦買（可打勾當購物清單）
   links: GuideGroup[]; // 常用連結（每項都要有 link）
 }
 

@@ -15,12 +15,11 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# 建置和部署分成兩個 job（GitHub 官方範本的做法）：
+# 上傳完要等 GitHub 登記好檔案，部署才找得到；同一個 job 裡緊接著部署偶爾會找不到
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,5 +33,13 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4

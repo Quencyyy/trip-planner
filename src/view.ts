@@ -19,6 +19,8 @@ import {
   bookingRows,
   dayTotal,
   directionsUrl,
+  appleDirectionsUrl,
+  appleMapsUrl,
   photoSearchUrl,
   durationLabel,
   formatDay,
@@ -125,7 +127,14 @@ function itemView(it: Item, spent: HTMLElement | null): HTMLElement {
         it.title || '（未命名）',
         it.booking !== 'none' ? chip(BOOKING_LABEL[it.booking], `bk-${it.booking}`) : null,
       ),
-      it.place ? h('a', { class: 'item-place', href: it.link && !isMove && /maps/.test(it.link) ? it.link : mapsUrl(it.place), target: '_blank', rel: 'noopener' }, '📍 ' + it.place) : null,
+      it.place
+        ? h(
+            'div',
+            { class: 'item-place-row' },
+            h('a', { class: 'item-place', href: it.link && !isMove && /maps/.test(it.link) ? it.link : mapsUrl(it.place), target: '_blank', rel: 'noopener' }, '📍 ' + it.place),
+            h('a', { class: 'apple-map', href: appleMapsUrl(it.place), target: '_blank', rel: 'noopener', 'aria-label': `用 Apple 地圖開 ${it.place}` }, 'Apple 地圖'),
+          )
+        : null,
       it.ticket ? h('div', { class: 'item-meta' }, chip('🎫 ' + it.ticket, 'ticket')) : null,
       noteHead ? h('div', { class: 'item-note' }, noteHead) : null,
       it.steps.length || noteRest
@@ -141,7 +150,10 @@ function itemView(it: Item, spent: HTMLElement | null): HTMLElement {
         'div',
         { class: 'item-links' },
         isMove && it.from && it.to && it.type === 'transport'
-          ? h('a', { href: directionsUrl(it.from, it.to), target: '_blank', rel: 'noopener' }, '🗺️ 看路線')
+          ? [
+              h('a', { href: directionsUrl(it.from, it.to), target: '_blank', rel: 'noopener' }, '🗺️ 看路線'),
+              h('a', { class: 'apple-map', href: appleDirectionsUrl(it.from, it.to), target: '_blank', rel: 'noopener', 'aria-label': `用 Apple 地圖看 ${it.from} 到 ${it.to} 的路線` }, 'Apple 地圖'),
+            ]
           : null,
         it.link && !(it.place && /maps/.test(it.link)) ? h('a', { href: it.link, target: '_blank', rel: 'noopener' }, '🔗 相關連結') : null,
       ),
@@ -155,6 +167,7 @@ function routeView(from: string, to: string): HTMLElement {
     'li',
     { class: 'route' },
     h('a', { href: directionsUrl(from, to), target: '_blank', rel: 'noopener', title: `${from} → ${to}` }, '🚶 怎麼去', h('span', { class: 'route-to' }, `　→ ${to}`)),
+    h('a', { class: 'apple-map', href: appleDirectionsUrl(from, to), target: '_blank', rel: 'noopener', 'aria-label': `用 Apple 地圖看到 ${to} 的路線` }, 'Apple'),
   );
 }
 

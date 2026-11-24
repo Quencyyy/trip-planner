@@ -487,3 +487,13 @@ export function bookingRows(t: Trip): { todo: BookingRow[]; done: BookingRow[] }
 export function photoSearchUrl(q: string): string {
   return 'https://www.google.com/search?udm=2&q=' + encodeURIComponent(q);
 }
+
+/** Apple 地圖：搜尋地點（iPhone 會直接開地圖 App） */
+export function appleMapsUrl(place: string): string {
+  return 'https://maps.apple.com/?q=' + encodeURIComponent(place);
+}
+
+/** Apple 地圖：大眾運輸路線 */
+export function appleDirectionsUrl(from: string, to: string): string {
+  return 'https://maps.apple.com/?saddr=' + encodeURIComponent(from) + '&daddr=' + encodeURIComponent(to) + '&dirflg=r';
+}

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   blankItem,
+  appleDirectionsUrl,
+  appleMapsUrl,
   photoSearchUrl,
   bookingRows,
   compactItem,
@@ -274,5 +276,16 @@ describe('study（行前功課）', () => {
     expect((compactTrip(t) as { study?: string }).study).toBe('osaka');
     expect(normalizeTrip({ ...base, study: '../x' }).study).toBeUndefined();
     expect('study' in (compactTrip(normalizeTrip(base)) as object)).toBe(false);
+  });
+});
+
+describe('Apple 地圖連結', () => {
+  it('搜尋地點：中文與符號都會編碼', () => {
+    expect(appleMapsUrl('伏見稻荷大社')).toBe('https://maps.apple.com/?q=' + encodeURIComponent('伏見稻荷大社'));
+    expect(appleMapsUrl('A&B')).not.toContain('A&B');
+  });
+  it('路線：起點、終點、大眾運輸', () => {
+    const u = appleDirectionsUrl('心齋橋站', '關西國際機場 第1航廈');
+    expect(u).toBe('https://maps.apple.com/?saddr=' + encodeURIComponent('心齋橋站') + '&daddr=' + encodeURIComponent('關西國際機場 第1航廈') + '&dirflg=r');
   });
 });

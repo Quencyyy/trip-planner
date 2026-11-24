@@ -251,6 +251,9 @@ a.sub { color: var(--link); }
 }
 .steps li { padding: 1px 0; }
 .steps li::marker { color: var(--accent); }
+/* 地點旁的 Apple 地圖小按鈕（點地點本身是 Google 地圖） */
+.item-place-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.apple-map { flex: none; font-size: 0.78rem; padding: 0 8px; border: 1.5px solid var(--line); border-radius: 99px; color: var(--muted); text-decoration: none; white-space: nowrap; }
 .item-place { display: inline-block; font-size: 0.9rem; margin-top: 3px; overflow-wrap: anywhere; }
 .item-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
 .chip {

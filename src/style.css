@@ -504,6 +504,8 @@ button.link { border: 0; background: none; color: var(--link); padding: 2px 4px;
 .rail-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .rail-step { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; background: var(--card); border: 2.5px solid var(--line); border-radius: 16px; padding: 12px; box-shadow: var(--sticker-sm); }
 .rail-step.walk { border-style: dashed; box-shadow: none; }
+.rail-step.focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), var(--sticker-sm); }
+.step-link { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
 .rail-step > div { min-width: 0; display: grid; gap: 3px; }
 .rail-step p { margin: 0; }
 .rail-badge { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: #fff; font-weight: 900; }

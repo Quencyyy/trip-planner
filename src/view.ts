@@ -143,7 +143,9 @@ function itemView(it: Item, spent: HTMLElement | null, railHref: string | null):
             'details',
             { class: 'item-more' },
             h('summary', {}, it.steps.length ? `路線 ${it.steps.length} 步` : '更多'),
-            it.steps.length ? h('ol', { class: 'steps' }, it.steps.map((s) => h('li', {}, s))) : null,
+            it.steps.length
+              ? h('ol', { class: 'steps' }, it.steps.map((s, i) => h('li', {}, railHref ? h('a', { class: 'step-link', href: `${railHref}/${i + 1}` }, s, ' 🚇') : s)))
+              : null,
             noteRest ? h('div', { class: 'item-note' }, noteRest) : null,
           )
         : null,
@@ -518,11 +520,15 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
     rail = null; // 沒有路線圖就不顯示分頁
   }
   if (tab === 'rail' && !rail) tab = 'day';
-  let leg = rail?.legs[sub] ? sub : '';
+  // 網址 rail/<項目>/<第幾步>：第幾步就拉近到那一段電車
+  const [legPart = '', segPart = ''] = sub.split('/');
+  let leg = rail?.legs[legPart] ? legPart : '';
+  let seg = Number(segPart) || 0;
   const railHref: RailHref = (itemId) => (rail?.legs[itemId] ? `#/t/${encodeURIComponent(id)}/rail/${itemId}` : null);
   const pickLeg = (lid: string) => {
     const prev = leg;
     leg = lid;
+    seg = 0;
     history.replaceState(null, '', `#/t/${encodeURIComponent(id)}/rail/${lid}`);
     draw();
     if (rail) animateRail(root, rail, prev, lid);
@@ -713,7 +719,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
         guideView(trip.id, store.groups, `整理自網路討論（${guide.updated}），價格和庫存以店家為準。同一樣東西在不同門市打勾會一起勾。打勾只存在這台。`, true),
       );
     else if (tab === 'study' && trip.study) body = studyView(trip.study);
-    else if (tab === 'rail' && rail) body = railView(rail, trip.id, leg, pickLeg);
+    else if (tab === 'rail' && rail) body = railView(rail, trip.id, leg, pickLeg, seg);
     else if (tab === 'links') body = linksView(linkGroups);
     else {
       const i = trip.days.findIndex((d) => d.date === selDate);

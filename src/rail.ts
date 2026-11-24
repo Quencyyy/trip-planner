@@ -79,6 +79,12 @@ export function legBox(net: Network, leg: Leg): Box {
   return { x: Math.round(x0), y: Math.round(y0), w: Math.round(w), h: Math.round(hh) };
 }
 
+/** 第 n 段電車（從 1 開始，只算要搭車的，不算走路）；超出範圍就是整段行程 */
+export function focusBox(net: Network, leg: Leg, seg: number): Box {
+  const rides = leg.segs.filter((s) => 'line' in s);
+  return seg >= 1 && seg <= rides.length ? legBox(net, { title: '', segs: [rides[seg - 1]] }) : legBox(net, leg);
+}
+
 /* ---------- 畫圖 ---------- */
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -99,7 +105,7 @@ function labelPos(st: Station): { x: number; y: number; anchor: string } {
 
 const pts = (net: Network, ids: string[]) => ids.map((id) => `${net.stations[id].x},${net.stations[id].y}`).join(' ');
 
-function mapSvg(net: Network, leg: Leg | null): SVGSVGElement {
+function mapSvg(net: Network, leg: Leg | null, seg = 0): SVGSVGElement {
   const used = new Set<string>(); // 這段行程經過的站
   const ends = new Set<string>(); // 上車、下車站
   const rides: { line: Line; path: string[] }[] = [];
@@ -112,7 +118,7 @@ function mapSvg(net: Network, leg: Leg | null): SVGSVGElement {
       rides.push({ line: net.lines[sg.line], path: r.path });
     }
   }
-  const box = leg ? legBox(net, leg) : FULL_VIEW;
+  const box = leg ? focusBox(net, leg, seg) : FULL_VIEW;
   const svg = s('svg', { viewBox: `${box.x} ${box.y} ${box.w} ${box.h}`, class: 'rail-svg', role: 'img', 'aria-label': leg ? `路線圖：${leg.title}` : '關西電車示意圖' });
 
   for (const a of net.areas) svg.append(s('rect', { x: a.x, y: a.y, width: a.w, height: a.h, rx: 24, class: 'rail-area' }), a.nameAt === 'bottom' ? s('text', { x: a.x + a.w - 14, y: a.y + a.h - 12, class: 'rail-area-name', 'text-anchor': 'end' }, a.name) : s('text', { x: a.x + 14, y: a.y + 26, class: 'rail-area-name' }, a.name));
@@ -166,7 +172,7 @@ function zoomTo(svg: SVGSVGElement, from: Box, to: Box): void {
   requestAnimationFrame(step);
 }
 
-function stepsView(net: Network, leg: Leg): HTMLElement {
+function stepsView(net: Network, leg: Leg, seg: number): HTMLElement {
   let n = 0;
   return h(
     'ol',
@@ -186,7 +192,7 @@ function stepsView(net: Network, leg: Leg): HTMLElement {
       lineTag.style.color = line.color;
       return h(
         'li',
-        { class: 'rail-step' },
+        { class: `rail-step${n === seg ? ' focus' : ''}` },
         badge,
         h(
           'div',
@@ -203,10 +209,10 @@ function stepsView(net: Network, leg: Leg): HTMLElement {
 }
 
 /** 電車分頁：上面選行程，中間地圖，下面步驟 */
-export function railView(data: RailData, tripId: string, selected: string, onPick: (legId: string) => void): HTMLElement {
+export function railView(data: RailData, tripId: string, selected: string, onPick: (legId: string) => void, seg = 0): HTMLElement {
   const legIds = Object.keys(data.legs);
   const leg = data.legs[selected] ?? null;
-  const svg = mapSvg(data.network, leg);
+  const svg = mapSvg(data.network, leg, seg);
   const chips = h(
     'nav',
     { class: 'day-strip store-strip rail-picks', 'aria-label': '選擇要看的路線' },
@@ -220,7 +226,7 @@ export function railView(data: RailData, tripId: string, selected: string, onPic
     { class: 'days rail' },
     chips,
     h('figure', { class: 'card rail-map' }, svg, h('figcaption', {}, leg ? '粗線是要搭的路段，虛線箭頭是行進方向；灰色虛線是走路轉乘。示意圖不照實際比例。' : '示意圖，只畫這趟會搭到的線，不照實際比例。上面選一段行程看怎麼搭。')),
-    leg ? stepsView(data.network, leg) : h('p', { class: 'empty' }, `這趟共 ${legIds.length} 段要搭電車，點上面的按鈕看每一段。`),
+    leg ? stepsView(data.network, leg, seg) : h('p', { class: 'empty' }, `這趟共 ${legIds.length} 段要搭電車，點上面的按鈕看每一段。`),
   );
   view.dataset.trip = tripId;
   return view;

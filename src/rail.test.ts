@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import netRaw from '../public/data/rail/kansai.json?raw';
 import tripRaw from '../public/data/rail/2026-11-osaka.json?raw';
-import { FULL_VIEW, legBox, ride, type Network, type RailData } from './rail';
+import { FULL_VIEW, focusBox, legBox, ride, type Network, type RailData } from './rail';
 
 const net = JSON.parse(netRaw) as Network;
 const trip = JSON.parse(tripRaw) as { legs: RailData['legs'] };
@@ -42,5 +42,20 @@ describe('行程資料', () => {
       expect(b.w / b.h).toBeCloseTo(FULL_VIEW.w / FULL_VIEW.h, 1);
       expect(b.w).toBeLessThanOrEqual(FULL_VIEW.w * 1.2);
     }
+  });
+});
+
+describe('focusBox（點第幾步只拉近那一段）', () => {
+  it('關西機場→心齋橋：第 1 步是南海，範圍比整段小、包含關西機場', () => {
+    const leg = trip.legs.i02;
+    const one = focusBox(net, leg, 1);
+    const all = legBox(net, leg);
+    const kix = net.stations['k-kix'];
+    expect(one.w).toBeLessThanOrEqual(all.w);
+    expect(kix.x).toBeGreaterThan(one.x);
+    expect(kix.x).toBeLessThan(one.x + one.w);
+  });
+  it('超出範圍（例如走路那一步）就看整段', () => {
+    expect(focusBox(net, trip.legs.i20, 9)).toEqual(legBox(net, trip.legs.i20));
   });
 });

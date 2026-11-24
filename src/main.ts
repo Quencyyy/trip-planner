@@ -6,7 +6,7 @@ import { renderHome, renderTrip, type TripTab } from './view';
 // 舊網址 #/t/<id>/today 也會落到「預設顯示今天」
 // 舊網址 #/t/<id>/before、/after 會落到「注意事項」的對應階段
 const tabOf = (p?: string): TripTab => (p === 'book' || p === 'money' || p === 'links' || p === 'shop' || p === 'study' || p === 'rail' ? p : p === 'notes' || p === 'before' || p === 'after' ? 'notes' : 'day');
-const subOf = (parts: string[]): string => (parts[2] === 'day' || parts[2] === 'notes' || parts[2] === 'shop' || parts[2] === 'rail' ? (parts[3] ?? '') : parts[2] === 'before' || parts[2] === 'after' ? parts[2] : '');
+const subOf = (parts: string[]): string => (parts[2] === 'day' || parts[2] === 'notes' || parts[2] === 'shop' ? (parts[3] ?? '') : parts[2] === 'rail' ? parts.slice(3, 5).join('/') : parts[2] === 'before' || parts[2] === 'after' ? parts[2] : '');
 
 const app = document.getElementById('app')!;
 let current = location.hash;

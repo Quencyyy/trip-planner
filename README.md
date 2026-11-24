@@ -12,6 +12,7 @@
 | `#/t/<id>/money` | 記帳總覽：信用卡／現金合計、分帳、台幣換算 |
 | `#/t/<id>/before`、`/after` | 出發前／回國清單（大標摺疊，打勾只記在這台裝置） |
 | `#/t/<id>/shop/<門市>` | 推薦買：先選門市（藥妝店、唐吉訶德、超市、伴手禮、機場、Bic Camera、LOFT、USJ），再按類別看；附日本／台灣價格與省多少，可打勾當購物清單 |
+| `#/t/<id>/rail/<項目>` | 電車路線圖：自己畫的關西示意圖，選一段交通就拉近，標出要搭的線、月台方向、坐幾站與轉乘（`public/data/rail/`） |
 | `#/t/<id>/study` | 行前功課：大阪的地理、歷史、關西腔、美食與景點（插圖＋動畫，`public/study/<名稱>.html`，行程 JSON 的 `study` 指定） |
 | `#/edit`、`#/edit/<id>` | 新增行程；拖拉排序、跨天移動、依時間排序、設定匯率 |
 | `#/settings` | 貼 GitHub 權杖 |
@@ -20,6 +21,7 @@
 
 - `public/data/index.json`：行程列表
 - `public/data/trips/<id>.json`：每趟行程。`guide` 指定清單、`twdRate` 是固定匯率（不填就用即時匯率）
+- `public/data/rail/kansai.json`：電車示意圖（站、座標、各線方向）；`public/data/rail/<行程>.json`：每段交通怎麼搭（對應行程項目 id），有這個檔才會出現「電車」分頁
 - `public/study/<名稱>.html`：行前功課頁（獨立的靜態頁，放在分頁裡顯示）；行程 JSON 加 `"study": "osaka"` 才會出現分頁
 - `public/data/guides/<名稱>.json`：注意事項（`before`／`during`／`after`）、推薦買（`shop`：門市 → 類別 → 品項）、常用連結（`links`），目前有 `japan`
 

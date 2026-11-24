@@ -1,0 +1,459 @@
+{
+ "name": "關西電車示意圖",
+ "stations": {
+  "m-umeda": {
+   "name": "梅田",
+   "x": 440,
+   "y": 430,
+   "code": "M16",
+   "label": "r"
+  },
+  "m-yodoyabashi": {
+   "name": "淀屋橋",
+   "x": 440,
+   "y": 490,
+   "code": "M17",
+   "label": "l"
+  },
+  "m-hommachi": {
+   "name": "本町",
+   "x": 440,
+   "y": 550,
+   "code": "M18",
+   "label": "l"
+  },
+  "m-shinsaibashi": {
+   "name": "心斎橋",
+   "x": 440,
+   "y": 610,
+   "code": "M19",
+   "zh": "心齋橋",
+   "label": "l"
+  },
+  "m-namba": {
+   "name": "なんば",
+   "x": 440,
+   "y": 670,
+   "code": "M20",
+   "zh": "難波",
+   "label": "l"
+  },
+  "n-nagahoribashi": {
+   "name": "長堀橋",
+   "x": 500,
+   "y": 610,
+   "code": "N16",
+   "label": "b"
+  },
+  "n-matsuyamachi": {
+   "name": "松屋町",
+   "x": 560,
+   "y": 610,
+   "code": "N17",
+   "label": "t"
+  },
+  "n-tanimachi6": {
+   "name": "谷町六丁目",
+   "x": 620,
+   "y": 610,
+   "code": "N18",
+   "label": "b"
+  },
+  "n-tamatsukuri": {
+   "name": "玉造",
+   "x": 680,
+   "y": 610,
+   "code": "N19",
+   "label": "t"
+  },
+  "n-morinomiya": {
+   "name": "森ノ宮",
+   "x": 740,
+   "y": 610,
+   "code": "N20",
+   "zh": "森之宮",
+   "label": "b"
+  },
+  "k-namba": {
+   "name": "南海なんば",
+   "x": 470,
+   "y": 700,
+   "code": "NK01",
+   "zh": "南海難波",
+   "label": "r"
+  },
+  "k-shinimamiya": {
+   "name": "新今宮",
+   "x": 460,
+   "y": 760,
+   "label": "r"
+  },
+  "k-tengachaya": {
+   "name": "天下茶屋",
+   "x": 440,
+   "y": 810,
+   "label": "r"
+  },
+  "k-sakai": {
+   "name": "堺",
+   "x": 410,
+   "y": 860,
+   "label": "r"
+  },
+  "k-kishiwada": {
+   "name": "岸和田",
+   "x": 370,
+   "y": 910,
+   "label": "r"
+  },
+  "k-izumisano": {
+   "name": "泉佐野",
+   "x": 330,
+   "y": 955,
+   "label": "r"
+  },
+  "k-rinku": {
+   "name": "りんくうタウン",
+   "x": 290,
+   "y": 995,
+   "label": "r"
+  },
+  "k-kix": {
+   "name": "関西空港",
+   "x": 230,
+   "y": 1040,
+   "code": "NK45",
+   "zh": "關西機場",
+   "label": "r"
+  },
+  "j-osaka": {
+   "name": "大阪（JR）",
+   "x": 385,
+   "y": 430,
+   "zh": "JR 大阪",
+   "label": "t"
+  },
+  "j-fukushima": {
+   "name": "福島",
+   "x": 330,
+   "y": 455,
+   "label": "t"
+  },
+  "j-noda": {
+   "name": "野田",
+   "x": 280,
+   "y": 480,
+   "label": "t"
+  },
+  "j-nishikujo": {
+   "name": "西九条",
+   "x": 230,
+   "y": 510,
+   "zh": "西九條",
+   "label": "b"
+  },
+  "y-ajikawaguchi": {
+   "name": "安治川口",
+   "x": 170,
+   "y": 535,
+   "label": "t"
+  },
+  "y-usj": {
+   "name": "ユニバーサルシティ",
+   "x": 110,
+   "y": 560,
+   "zh": "環球影城站",
+   "label": "b"
+  },
+  "kh-yodoyabashi": {
+   "name": "京阪 淀屋橋",
+   "x": 475,
+   "y": 480,
+   "zh": "京阪淀屋橋",
+   "label": "b"
+  },
+  "kh-kitahama": {
+   "name": "北浜",
+   "x": 515,
+   "y": 470,
+   "label": "t"
+  },
+  "kh-temmabashi": {
+   "name": "天満橋",
+   "x": 560,
+   "y": 458,
+   "label": "b"
+  },
+  "kh-kyobashi": {
+   "name": "京橋",
+   "x": 620,
+   "y": 440,
+   "label": "b"
+  },
+  "kh-hirakata": {
+   "name": "枚方市",
+   "x": 700,
+   "y": 360,
+   "label": "r"
+  },
+  "kh-kuzuha": {
+   "name": "樟葉",
+   "x": 745,
+   "y": 310,
+   "label": "r"
+  },
+  "kh-chushojima": {
+   "name": "中書島",
+   "x": 785,
+   "y": 262,
+   "label": "l"
+  },
+  "kh-tambabashi": {
+   "name": "丹波橋",
+   "x": 800,
+   "y": 230,
+   "label": "l"
+  },
+  "kh-fushimiinari": {
+   "name": "伏見稲荷",
+   "x": 815,
+   "y": 195,
+   "zh": "伏見稻荷",
+   "label": "l"
+  },
+  "kh-tobakaido": {
+   "name": "鳥羽街道",
+   "x": 825,
+   "y": 168,
+   "label": "l"
+  },
+  "kh-tofukuji": {
+   "name": "東福寺",
+   "x": 835,
+   "y": 141,
+   "label": "l"
+  },
+  "kh-shichijo": {
+   "name": "七条",
+   "x": 845,
+   "y": 114,
+   "label": "l"
+  },
+  "kh-kiyomizugojo": {
+   "name": "清水五条",
+   "x": 855,
+   "y": 87,
+   "label": "l"
+  },
+  "kh-gionshijo": {
+   "name": "祇園四条",
+   "x": 865,
+   "y": 60,
+   "label": "l"
+  }
+ },
+ "lines": {
+  "midosuji": {
+   "name": "御堂筋線",
+   "kind": "地下鐵",
+   "color": "#e5171f",
+   "stations": [
+    "m-umeda",
+    "m-yodoyabashi",
+    "m-hommachi",
+    "m-shinsaibashi",
+    "m-namba"
+   ],
+   "dirs": {
+    "up": "天王寺・なかもず方面",
+    "down": "梅田・新大阪・千里中央方面"
+   },
+   "endLabels": [
+    {
+     "text": "↑ 新大阪・千里中央",
+     "x": 452,
+     "y": 400,
+     "anchor": "start"
+    },
+    {
+     "text": "↓ 天王寺・なかもず",
+     "x": 428,
+     "y": 705,
+     "anchor": "end"
+    }
+   ]
+  },
+  "nagahori": {
+   "name": "長堀鶴見緑地線",
+   "kind": "地下鐵",
+   "color": "#8cc63f",
+   "stations": [
+    "m-shinsaibashi",
+    "n-nagahoribashi",
+    "n-matsuyamachi",
+    "n-tanimachi6",
+    "n-tamatsukuri",
+    "n-morinomiya"
+   ],
+   "dirs": {
+    "up": "京橋・門真南方面",
+    "down": "大正方面"
+   },
+   "endLabels": [
+    {
+     "text": "→ 京橋・門真南",
+     "x": 760,
+     "y": 596,
+     "anchor": "start"
+    }
+   ]
+  },
+  "nankai": {
+   "name": "南海電鐵",
+   "kind": "私鐵",
+   "color": "#25509b",
+   "stations": [
+    "k-namba",
+    "k-shinimamiya",
+    "k-tengachaya",
+    "k-sakai",
+    "k-kishiwada",
+    "k-izumisano",
+    "k-rinku",
+    "k-kix"
+   ],
+   "dirs": {
+    "up": "関西空港方面",
+    "down": "なんば方面"
+   },
+   "partial": true
+  },
+  "jrloop": {
+   "name": "JR 大阪環狀線",
+   "kind": "JR",
+   "color": "#f47a20",
+   "stations": [
+    "j-osaka",
+    "j-fukushima",
+    "j-noda",
+    "j-nishikujo"
+   ],
+   "dirs": {
+    "up": "内回り（西九条・弁天町方面）",
+    "down": "外回り（大阪・京橋方面）"
+   }
+  },
+  "yumesaki": {
+   "name": "JR 夢咲線",
+   "kind": "JR",
+   "color": "#d9338a",
+   "stations": [
+    "j-nishikujo",
+    "y-ajikawaguchi",
+    "y-usj"
+   ],
+   "dirs": {
+    "up": "ユニバーサルシティ・桜島方面",
+    "down": "西九条方面（有些班次直通大阪）"
+   },
+   "endLabels": [
+    {
+     "text": "← 桜島",
+     "x": 80,
+     "y": 548,
+     "anchor": "end"
+    }
+   ]
+  },
+  "keihan": {
+   "name": "京阪本線",
+   "kind": "私鐵",
+   "color": "#0b8a5a",
+   "stations": [
+    "kh-yodoyabashi",
+    "kh-kitahama",
+    "kh-temmabashi",
+    "kh-kyobashi",
+    "kh-hirakata",
+    "kh-kuzuha",
+    "kh-chushojima",
+    "kh-tambabashi",
+    "kh-fushimiinari",
+    "kh-tobakaido",
+    "kh-tofukuji",
+    "kh-shichijo",
+    "kh-kiyomizugojo",
+    "kh-gionshijo"
+   ],
+   "dirs": {
+    "up": "京都（三条・出町柳）方面",
+    "down": "大阪（淀屋橋）方面"
+   },
+   "partial": true,
+   "endLabels": [
+    {
+     "text": "↑ 三条・出町柳",
+     "x": 880,
+     "y": 40,
+     "anchor": "start"
+    }
+   ]
+  }
+ },
+ "pois": [
+  {
+   "name": "飯店",
+   "icon": "🏨",
+   "x": 385,
+   "y": 646,
+   "near": "m-shinsaibashi"
+  },
+  {
+   "name": "大阪城",
+   "icon": "🏯",
+   "x": 785,
+   "y": 548
+  },
+  {
+   "name": "USJ",
+   "icon": "🎢",
+   "x": 110,
+   "y": 612
+  },
+  {
+   "name": "關西機場",
+   "icon": "✈️",
+   "x": 185,
+   "y": 1060
+  },
+  {
+   "name": "清水寺",
+   "icon": "⛩️",
+   "x": 930,
+   "y": 95
+  },
+  {
+   "name": "伏見稻荷大社",
+   "icon": "⛩️",
+   "x": 900,
+   "y": 205
+  }
+ ],
+ "areas": [
+  {
+   "name": "京都",
+   "x": 760,
+   "y": 20,
+   "w": 230,
+   "h": 210
+  },
+  {
+   "name": "大阪市區",
+   "x": 300,
+   "y": 390,
+   "w": 500,
+   "h": 300,
+   "nameAt": "bottom"
+  }
+ ]
+}

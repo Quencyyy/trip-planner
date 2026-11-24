@@ -479,6 +479,47 @@ button.link { border: 0; background: none; color: var(--link); padding: 2px 4px;
 .day-pick.is-today .pick-n { color: var(--accent); }
 .day-pick.is-today.on .pick-n { color: var(--text); }
 
+/* 電車路線圖 */
+.rail { gap: 12px; }
+.rail-map { margin: 0; padding: 8px; overflow: hidden; }
+.rail-svg { display: block; width: 100%; height: auto; max-height: 72vh; background: var(--bg); border-radius: 14px; touch-action: pan-y; }
+.rail-map figcaption { font-size: 0.78rem; color: var(--muted); padding: 6px 4px 0; }
+.rail-area { fill: var(--soft-line); opacity: 0.45; }
+.rail-area-name { fill: var(--muted); font-size: 18px; font-weight: 700; letter-spacing: 0.2em; }
+.rail-line { fill: none; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+.rail-line.dim { opacity: 0.18; }
+.rail-ride { fill: none; stroke-width: 13; stroke-linecap: round; stroke-linejoin: round; }
+.rail-flow { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 2 14; animation: rail-flow 0.9s linear infinite; }
+@keyframes rail-flow { to { stroke-dashoffset: -16; } }
+.rail-walk { stroke: var(--muted); stroke-width: 4; stroke-dasharray: 4 7; stroke-linecap: round; }
+.rail-st circle { fill: var(--card); stroke: var(--line); stroke-width: 3; }
+.rail-st.end circle { fill: var(--accent); stroke: var(--line); stroke-width: 4; }
+.rail-st.dim { opacity: 0.25; }
+.rail-name { fill: var(--text); font-size: 15px; font-weight: 700; paint-order: stroke; stroke: var(--bg); stroke-width: 5px; stroke-linejoin: round; }
+.rail-st.end .rail-name { font-size: 19px; }
+.rail-end { fill: var(--muted); font-size: 13px; font-weight: 700; }
+.rail-end.dim { opacity: 0.35; }
+.rail-poi { font-size: 16px; font-weight: 700; fill: var(--text); paint-order: stroke; stroke: var(--bg); stroke-width: 5px; }
+.rail-poi.dim { opacity: 0.35; }
+.rail-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.rail-step { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; background: var(--card); border: 2.5px solid var(--line); border-radius: 16px; padding: 12px; box-shadow: var(--sticker-sm); }
+.rail-step.walk { border-style: dashed; box-shadow: none; }
+.rail-step > div { min-width: 0; display: grid; gap: 3px; }
+.rail-step p { margin: 0; }
+.rail-badge { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: #fff; font-weight: 900; }
+.rail-badge.walk { background: var(--soft-line); }
+.rail-step-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rail-linetag { font-weight: 900; border: 2.5px solid; border-radius: 99px; padding: 0 10px; background: var(--card); }
+.rail-kind { font-size: 0.78rem; color: var(--muted); }
+.rail-ride-text { font-size: 1.02rem; overflow-wrap: anywhere; }
+.rail-dir { font-size: 0.95rem; }
+.rail-dir b { background: var(--accent-soft); border-radius: 6px; padding: 0 6px; }
+.rail-meta { font-size: 0.85rem; color: var(--muted); }
+.rail-meta:empty { display: none; }
+.rail-tip { font-size: 0.85rem; color: var(--dur-ink); }
+.rail-step.walk p { font-size: 0.9rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .rail-flow { animation: none; } }
+
 /* 推薦買：門市標籤（名稱較長，寬度跟著字） */
 .store-strip { grid-auto-columns: max-content; }
 .store-strip .day-pick { padding: 5px 12px; }

@@ -1,0 +1,164 @@
+{
+ "network": "kansai",
+ "legs": {
+  "i02": {
+   "title": "關西機場 → 心齋橋",
+   "segs": [
+    {
+     "line": "nankai",
+     "from": "k-kix",
+     "to": "k-namba",
+     "info": "空港急行約 45 分；Rapi:t 約 35 分要另買特急券",
+     "tip": "搭終點是「なんば」的車就不會坐錯"
+    },
+    {
+     "walk": "南海なんば → 地下鐵なんば，跟著紅色「御堂筋線」指標走約 5 分"
+    },
+    {
+     "line": "midosuji",
+     "from": "m-namba",
+     "to": "m-shinsaibashi"
+    }
+   ]
+  },
+  "i12": {
+   "title": "心齋橋 → 大阪城",
+   "segs": [
+    {
+     "walk": "心齋橋站內換到黃綠色「長堀鶴見緑地線」月台"
+    },
+    {
+     "line": "nagahori",
+     "from": "m-shinsaibashi",
+     "to": "n-morinomiya",
+     "tip": "森ノ宮下車走到大阪城約 15 分"
+    }
+   ]
+  },
+  "i20": {
+   "title": "心齋橋 → 清水寺",
+   "segs": [
+    {
+     "line": "midosuji",
+     "from": "m-shinsaibashi",
+     "to": "m-yodoyabashi"
+    },
+    {
+     "walk": "地下鐵淀屋橋 → 京阪淀屋橋，地下直接連通"
+    },
+    {
+     "line": "keihan",
+     "from": "kh-yodoyabashi",
+     "to": "kh-gionshijo",
+     "info": "搭「特急」約 50 分（只畫主要站）",
+     "tip": "特急免費，不用另外買票"
+    },
+    {
+     "walk": "祇園四条走到清水寺約 25 分（上坡）"
+    }
+   ]
+  },
+  "i44": {
+   "title": "祇園四条 → 伏見稻荷",
+   "segs": [
+    {
+     "line": "keihan",
+     "from": "kh-gionshijo",
+     "to": "kh-fushimiinari",
+     "tip": "搭「普通」（各站停）最保險；特急不停伏見稲荷，上車前看月台標示"
+    }
+   ]
+  },
+  "i25": {
+   "title": "伏見稻荷 → 心齋橋",
+   "segs": [
+    {
+     "line": "keihan",
+     "from": "kh-fushimiinari",
+     "to": "kh-yodoyabashi",
+     "info": "約 50 分（只畫主要站）",
+     "tip": "先搭普通到丹波橋或中書島，換對面月台的特急比較快"
+    },
+    {
+     "walk": "京阪淀屋橋 → 地下鐵淀屋橋，地下直接連通"
+    },
+    {
+     "line": "midosuji",
+     "from": "m-yodoyabashi",
+     "to": "m-shinsaibashi"
+    }
+   ]
+  },
+  "i26": {
+   "title": "心齋橋 → 環球影城",
+   "segs": [
+    {
+     "line": "midosuji",
+     "from": "m-shinsaibashi",
+     "to": "m-umeda"
+    },
+    {
+     "walk": "梅田 → JR 大阪站，跟著「JR線」指標走約 5～10 分"
+    },
+    {
+     "line": "jrloop",
+     "from": "j-osaka",
+     "to": "j-nishikujo",
+     "tip": "有些班次直通ユニバーサルシティ，月台螢幕寫「ユニバーサルシティ行き」就直接搭，不用在西九條換"
+    },
+    {
+     "walk": "西九條同站換對面或旁邊月台"
+    },
+    {
+     "line": "yumesaki",
+     "from": "j-nishikujo",
+     "to": "y-usj"
+    }
+   ]
+  },
+  "i40": {
+   "title": "環球影城 → 心齋橋",
+   "segs": [
+    {
+     "line": "yumesaki",
+     "from": "y-usj",
+     "to": "j-nishikujo",
+     "tip": "有些班次直通大阪，就不用換車"
+    },
+    {
+     "line": "jrloop",
+     "from": "j-nishikujo",
+     "to": "j-osaka"
+    },
+    {
+     "walk": "JR 大阪 → 地下鐵梅田，跟著紅色「御堂筋線」指標走"
+    },
+    {
+     "line": "midosuji",
+     "from": "m-umeda",
+     "to": "m-shinsaibashi"
+    }
+   ]
+  },
+  "i31": {
+   "title": "心齋橋 → 關西機場",
+   "segs": [
+    {
+     "line": "midosuji",
+     "from": "m-shinsaibashi",
+     "to": "m-namba"
+    },
+    {
+     "walk": "地下鐵なんば → 南海なんば，跟著「南海線」指標走約 5 分"
+    },
+    {
+     "line": "nankai",
+     "from": "k-namba",
+     "to": "k-kix",
+     "info": "空港急行約 45 分；Rapi:t 約 35 分要另買特急券",
+     "tip": "有些急行開往和歌山市，要看清楚終點是「関西空港」"
+    }
+   ]
+  }
+ }
+}

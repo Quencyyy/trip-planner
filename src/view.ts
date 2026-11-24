@@ -1,6 +1,7 @@
 // 查看頁：旅程列表、旅程內容、今天、預約
 
-import { fetchGuide, fetchIndex, fetchTrip } from './data';
+import { fetchGuide, fetchIndex, fetchRail, fetchTrip } from './data';
+import { animateRail, railView, type RailData } from './rail';
 import { h, mount, toast } from './dom';
 import { GitHubError, NetworkError, isReady, loadSettings } from './github';
 import { liveRate } from './rate';
@@ -101,7 +102,7 @@ function chip(text: string, cls: string): HTMLElement {
 
 type SpentFor = (where: Target, list: Expense[]) => HTMLElement | null;
 
-function itemView(it: Item, spent: HTMLElement | null): HTMLElement {
+function itemView(it: Item, spent: HTMLElement | null, railHref: string | null): HTMLElement {
   const isMove = it.type === 'transport' || it.type === 'flight';
   const dur = durationLabel(it);
   // 平常只露出備註第一行，其餘和路線步驟收進「詳細」
@@ -155,6 +156,7 @@ function itemView(it: Item, spent: HTMLElement | null): HTMLElement {
               h('a', { class: 'apple-map', href: appleDirectionsUrl(it.from, it.to), target: '_blank', rel: 'noopener', 'aria-label': `用 Apple 地圖看 ${it.from} 到 ${it.to} 的路線` }, 'Apple 地圖'),
             ]
           : null,
+        railHref ? h('a', { class: 'rail-link', href: railHref }, '🚇 路線圖') : null,
         it.link && !(it.place && /maps/.test(it.link)) ? h('a', { href: it.link, target: '_blank', rel: 'noopener' }, '🔗 相關連結') : null,
       ),
       spent,
@@ -171,7 +173,7 @@ function routeView(from: string, to: string): HTMLElement {
   );
 }
 
-function itemsView(day: Day, spentFor: SpentFor): HTMLElement {
+function itemsView(day: Day, spentFor: SpentFor, railHref: RailHref): HTMLElement {
   const items = day.items;
   const out: HTMLElement[] = [];
   items.forEach((it, i) => {
@@ -179,12 +181,14 @@ function itemsView(day: Day, spentFor: SpentFor): HTMLElement {
     if (r) out.push(routeView(r[0], r[1]));
     // 「其他」多半是提醒事項，不放記帳按鈕（已有的記帳仍顯示）
     const spent = it.type === 'other' && it.spent.length === 0 ? null : spentFor({ date: day.date, itemId: it.id }, it.spent);
-    out.push(itemView(it, spent));
+    out.push(itemView(it, spent, railHref(it.id)));
   });
   return h('ol', { class: 'items' }, out);
 }
 
-function dayView(day: Day, n: number, today: string, spentFor: SpentFor): HTMLElement {
+type RailHref = (itemId: string) => string | null;
+
+function dayView(day: Day, n: number, today: string, spentFor: SpentFor, railHref: RailHref): HTMLElement {
   const isToday = day.date === today;
   const total = dayTotal(day);
   const other = spentFor({ date: day.date, itemId: '' }, day.spent);
@@ -199,7 +203,7 @@ function dayView(day: Day, n: number, today: string, spentFor: SpentFor): HTMLEl
       isToday ? h('span', { class: 'badge' }, '今天') : null,
       total ? h('span', { class: 'day-total' }, formatYen(total)) : null,
     ),
-    day.items.length === 0 ? h('p', { class: 'day-empty' }, '自由活動 ☁️') : itemsView(day, spentFor),
+    day.items.length === 0 ? h('p', { class: 'day-empty' }, '自由活動 ☁️') : itemsView(day, spentFor, railHref),
     other ? h('div', { class: 'day-other' }, h('span', { class: 'day-other-label' }, '🧾 其他花費'), other) : null,
   );
 }
@@ -451,7 +455,7 @@ function savePay(p: Pay): void {
   }
 }
 
-export type TripTab = 'day' | 'book' | 'money' | 'notes' | 'shop' | 'study' | 'links';
+export type TripTab = 'day' | 'rail' | 'book' | 'money' | 'notes' | 'shop' | 'study' | 'links';
 type Stage = 'before' | 'during' | 'after';
 const STAGES: [Stage, string][] = [['before', '出發前'], ['during', '旅途中'], ['after', '回國']];
 
@@ -507,6 +511,22 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
   if (tab === 'notes' && !guide) tab = 'day';
   if (tab === 'shop' && !guide?.shop.length) tab = 'day';
   if (tab === 'study' && !trip.study) tab = 'day';
+  let rail: RailData | null = null;
+  try {
+    rail = await fetchRail(trip.id);
+  } catch {
+    rail = null; // 沒有路線圖就不顯示分頁
+  }
+  if (tab === 'rail' && !rail) tab = 'day';
+  let leg = rail?.legs[sub] ? sub : '';
+  const railHref: RailHref = (itemId) => (rail?.legs[itemId] ? `#/t/${encodeURIComponent(id)}/rail/${itemId}` : null);
+  const pickLeg = (lid: string) => {
+    const prev = leg;
+    leg = lid;
+    history.replaceState(null, '', `#/t/${encodeURIComponent(id)}/rail/${lid}`);
+    draw();
+    if (rail) animateRail(root, rail, prev, lid);
+  };
   // 常用連結：清單裡的＋這趟行程項目上的連結
   const tripLinks: GuideGroup = {
     title: '🗓️ 這趟行程',
@@ -693,6 +713,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
         guideView(trip.id, store.groups, `整理自網路討論（${guide.updated}），價格和庫存以店家為準。同一樣東西在不同門市打勾會一起勾。打勾只存在這台。`, true),
       );
     else if (tab === 'study' && trip.study) body = studyView(trip.study);
+    else if (tab === 'rail' && rail) body = railView(rail, trip.id, leg, pickLeg);
     else if (tab === 'links') body = linksView(linkGroups);
     else {
       const i = trip.days.findIndex((d) => d.date === selDate);
@@ -719,7 +740,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
                   ),
                 ),
               ),
-              dayView(trip.days[i], i + 1, today, spentFor),
+              dayView(trip.days[i], i + 1, today, spentFor, railHref),
             );
     }
 
@@ -736,6 +757,7 @@ export async function renderTrip(root: HTMLElement, id: string, tab: TripTab, su
         'nav',
         { class: 'tabs' },
         h('a', { href: `#/t/${id}/day/${selDate}`, class: tab === 'day' ? 'on' : '' }, '行程'),
+        rail ? h('a', { href: `#/t/${id}/rail/${leg}`, class: tab === 'rail' ? 'on' : '' }, '電車') : null,
         h('a', { href: `#/t/${id}/book`, class: tab === 'book' ? 'on' : '' }, '預約', todoCount ? h('span', { class: 'dot' }, String(todoCount)) : null),
         h('a', { href: `#/t/${id}/money`, class: tab === 'money' ? 'on' : '' }, '記帳'),
         guide ? h('a', { href: `#/t/${id}/notes/${stage}`, class: tab === 'notes' ? 'on' : '' }, '注意事項') : null,

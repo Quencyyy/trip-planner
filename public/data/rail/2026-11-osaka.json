@@ -36,7 +36,7 @@
    ]
   },
   "i20": {
-   "title": "心齋橋 → 清水寺",
+   "title": "心齋橋 → 伏見稻荷",
    "segs": [
     {
      "line": "midosuji",
@@ -49,35 +49,45 @@
     {
      "line": "keihan",
      "from": "kh-yodoyabashi",
-     "to": "kh-gionshijo",
-     "info": "搭「特急」約 50 分（只畫主要站）",
+     "to": "kh-tambabashi",
+     "info": "搭「特急」約 40 分（只畫主要站）",
      "tip": "特急免費，不用另外買票"
     },
     {
-     "walk": "祇園四条走到清水寺約 25 分（上坡）"
+     "walk": "丹波橋同站換「普通」（各站停），特急不停伏見稲荷"
+    },
+    {
+     "line": "keihan",
+     "from": "kh-tambabashi",
+     "to": "kh-fushimiinari",
+     "info": "約 5 分"
     }
    ]
   },
   "i44": {
-   "title": "祇園四条 → 伏見稻荷",
-   "segs": [
-    {
-     "line": "keihan",
-     "from": "kh-gionshijo",
-     "to": "kh-fushimiinari",
-     "tip": "搭「普通」（各站停）最保險；特急不停伏見稲荷，上車前看月台標示"
-    }
-   ]
-  },
-  "i25": {
-   "title": "伏見稻荷 → 心齋橋",
+   "title": "伏見稻荷 → 清水寺",
    "segs": [
     {
      "line": "keihan",
      "from": "kh-fushimiinari",
+     "to": "kh-kiyomizugojo",
+     "info": "約 10 分",
+     "tip": "月台找往京都（三条・出町柳）方向；伏見稲荷只停普通，來的車都可以搭"
+    },
+    {
+     "walk": "清水五条走到清水寺約 25 分（上坡）"
+    }
+   ]
+  },
+  "i25": {
+   "title": "祇園四条 → 心齋橋",
+   "segs": [
+    {
+     "line": "keihan",
+     "from": "kh-gionshijo",
      "to": "kh-yodoyabashi",
-     "info": "約 50 分（只畫主要站）",
-     "tip": "先搭普通到丹波橋或中書島，換對面月台的特急比較快"
+     "info": "搭「特急」約 50 分（只畫主要站）",
+     "tip": "特急免費，不用另外買票"
     },
     {
      "walk": "京阪淀屋橋 → 地下鐵淀屋橋，地下直接連通"
